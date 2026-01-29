@@ -1,0 +1,4 @@
+# This directory is used for local file uploads when Supabase is not configured
+# Files in this directory should NOT be committed to git
+
+# The .gitignore file will exclude all files except this .gitkeep

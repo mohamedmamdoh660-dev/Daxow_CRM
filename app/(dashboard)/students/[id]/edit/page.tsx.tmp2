@@ -1,0 +1,1057 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { CalendarIcon, User, IdCard, Phone, GraduationCap, ArrowLeft, Loader2, Save, MapPin, Users, FileText, Upload, X, Eye } from 'lucide-react';
+import { PhoneInput } from 'react-international-phone';
+import 'react-international-phone/style.css';
+import { formSchema, FormValues } from '@/components/students/registration-wizard-context';
+import { toast } from 'sonner';
+import Link from 'next/link';
+
+const RequiredStar = () => <span className="text-destructive">*</span>;
+
+export default function EditStudentPage({ params }: { params: Promise<{ id: string }> }) {
+    const router = useRouter();
+    const [studentId, setStudentId] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [nationalityCountries, setNationalityCountries] = useState<Array<{ id: string; name: string; code: string }>>([]);
+    const [allCountries, setAllCountries] = useState<Array<{ id: string; name: string; code: string }>>([]);
+    const [degrees, setDegrees] = useState<Array<{ id: string; name: string }>>([]);
+    const [existingDocuments, setExistingDocuments] = useState<Array<{
+        id: string;
+        fileName: string;
+        fileType: string;
+        fileUrl: string;
+        fileSize: number;
+    }>>([]);
+    const [uploading, setUploading] = useState<string | null>(null);
+
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+    });
+
+    const watchHaveTc = form.watch('haveTc');
+    const watchEducationLevel = form.watch('educationLevelName');
+
+    // Unwrap params
+    useEffect(() => {
+        params.then(p => setStudentId(p.id));
+    }, [params]);
+
+    // Fetch student data and populate form
+    useEffect(() => {
+        if (!studentId) return;
+
+        async function fetchData() {
+            try {
+                const [studentRes, nationalityCountriesRes, allCountriesRes, degreesRes] = await Promise.all([
+                    fetch(`/api/students/${studentId}`),
+                    fetch('/api/countries?pageSize=200&activeOnNationalities=true'),
+                    fetch('/api/countries?pageSize=200'),
+                    fetch('/api/degrees'),
+                ]);
+
+                if (nationalityCountriesRes.ok) {
+                    const data = await nationalityCountriesRes.json();
+                    setNationalityCountries(data.countries || []);
+                }
+
+                if (allCountriesRes.ok) {
+                    const data = await allCountriesRes.json();
+                    setAllCountries(data.countries || []);
+                }
+
+                if (degreesRes.ok) {
+                    const data = await degreesRes.json();
+                    setDegrees(data.degrees || []);
+                }
+
+                if (studentRes.ok) {
+                    const { student } = await studentRes.json();
+
+                    // Set existing documents
+                    if (student.studentDocuments && Array.isArray(student.studentDocuments)) {
+                        setExistingDocuments(student.studentDocuments);
+                    }
+
+                    // Populate form - CRITICAL: Use reset() not setValue() to avoid clearing
+                    form.reset({
+                        transferStudent: student.transferStudent ? 'yes' : 'no',
+                        haveTc: student.haveTc ? 'yes' : 'no',
+                        tcNumber: student.tcNumber || '',
+                        blueCard: student.blueCard ? 'yes' : 'no',
+                        firstName: student.firstName || '',
+                        lastName: student.lastName || '',
+                        gender: student.gender || 'Male',
+                        dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth) : undefined,
+                        nationality: student.nationality || '',
+                        passportNumber: student.passportNumber || '',
+                        passportIssueDate: student.passportIssueDate ? new Date(student.passportIssueDate) : undefined,
+                        passportExpiryDate: student.passportExpiryDate ? new Date(student.passportExpiryDate) : undefined,
+                        email: student.email || '',
+                        mobile: student.mobile || '',
+                        addressLine1: student.addressLine1 || '',
+                        cityDistrict: student.cityDistrict || '',
+                        stateProvince: student.stateProvince || '',
+                        postalCode: student.postalCode || '',
+                        addressCountry: student.addressCountry || '',
+                        fatherName: student.fatherName || '',
+                        fatherMobile: student.fatherMobile || '',
+                        fatherOccupation: student.fatherOccupation || '',
+                        motherName: student.motherName || '',
+                        motherMobile: student.motherMobile || '',
+                        motherOccupation: student.motherOccupation || '',
+                        educationLevelId: student.educationLevelId || '',
+                        educationLevelName: student.educationLevelName || '',
+                        highSchoolCountry: student.highSchoolCountry || '',
+                        highSchoolName: student.highSchoolName || '',
+                        highSchoolGpa: student.highSchoolGpa?.toString() || '',
+                        bachelorCountry: student.bachelorCountry || '',
+                        bachelorSchoolName: student.bachelorSchoolName || '',
+                        bachelorGpa: student.bachelorGpa?.toString() || '',
+                        masterCountry: student.masterCountry || '',
+                        masterSchoolName: student.masterSchoolName || '',
+                        fetchData();
+                    }, [studentId]);
+
+                    useEffect(() => {
+                        const levelName = watchEducationLevel?.toLowerCase();
+
+                        if (levelName !== 'master' && levelName !== 'phd') {
+                            form.setValue('bachelorSchoolName', '');
+                            form.setValue('bachelorCountry', '');
+                            form.setValue('bachelorGpa', '');
+                        }
+
+                        if (levelName !== 'phd') {
+                            form.setValue('masterSchoolName', '');
+                            form.setValue('masterCountry', '');
+                            form.setValue('masterGpa', '');
+                        }
+                    }, [watchEducationLevel, form]);
+
+                    const onSubmit = async (values: FormValues) => {
+                        setIsSubmitting(true);
+
+                        try {
+                            const studentData = {
+                                ...values,
+                                fullName: `${values.firstName} ${values.lastName}`,
+                                transferStudent: values.transferStudent === 'yes',
+                                haveTc: values.haveTc === 'yes',
+                                blueCard: values.blueCard === 'yes',
+                                dateOfBirth: values.dateOfBirth?.toISOString(),
+                                passportIssueDate: values.passportIssueDate?.toISOString(),
+                                passportExpiryDate: values.passportExpiryDate?.toISOString(),
+                            };
+
+                            const response = await fetch(`/api/students/${studentId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(studentData),
+                            });
+
+                            const data = await response.json();
+
+                            if (!response.ok) {
+                                toast.error(data.error || 'Failed to update student');
+                                return;
+                            }
+
+                            toast.success('Student updated successfully!');
+                            router.push(`/students/${studentId}`);
+                        } catch (error) {
+                            console.error('Error updating student:', error);
+                            toast.error('Failed to update student. Please try again.');
+                        } finally {
+                            setIsSubmitting(false);
+                        }
+                    };
+
+                    if (isLoading) {
+                        return (
+                            <div className="flex items-center justify-center min-h-screen">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="container max-w-6xl py-8 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Link href={`/students/${studentId}`}>
+                                        <Button variant="ghost" size="sm">
+                                            <ArrowLeft className="mr-2 h-4 w-4" />
+                                            Back to Student
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2">Edit Student Information</h1>
+                                <p className="text-muted-foreground">
+                                    Update all student information below
+                                </p>
+                            </div>
+
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                    {/* Section 1: Student Information */}
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-center gap-2">
+                                                <User className="h-5 w-5" />
+                                                <CardTitle>Student Information</CardTitle>
+                                            </div>
+                                            <CardDescription>Basic student category questions</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="transferStudent"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Transfer Student <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <RadioGroup
+                                                                    onValueChange={field.onChange}
+                                                                    defaultValue={field.value}
+                                                                    className="flex gap-4"
+                                                                >
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="yes" id="transfer-yes" />
+                                                                        <Label htmlFor="transfer-yes">Yes</Label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="no" id="transfer-no" />
+                                                                        <Label htmlFor="transfer-no">No</Label>
+                                                                    </div>
+                                                                </RadioGroup>
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="haveTc"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Have Turkish T.C.?</FormLabel>
+                                                            <FormControl>
+                                                                <RadioGroup
+                                                                    onValueChange={field.onChange}
+                                                                    defaultValue={field.value}
+                                                                    className="flex gap-4"
+                                                                >
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="yes" id="tc-yes" />
+                                                                        <Label htmlFor="tc-yes">Yes</Label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="no" id="tc-no" />
+                                                                        <Label htmlFor="tc-no">No</Label>
+                                                                    </div>
+                                                                </RadioGroup>
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="blueCard"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Have Blue Card? <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <RadioGroup
+                                                                    onValueChange={field.onChange}
+                                                                    defaultValue={field.value}
+                                                                    className="flex gap-4"
+                                                                >
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="yes" id="blue-yes" />
+                                                                        <Label htmlFor="blue-yes">Yes</Label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="no" id="blue-no" />
+                                                                        <Label htmlFor="blue-no">No</Label>
+                                                                    </div>
+                                                                </RadioGroup>
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            {watchHaveTc === 'yes' && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="tcNumber"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>T.C. Number <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Enter T.C. number" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Section 2: Personal Details */}
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-center gap-2">
+                                                <IdCard className="h-5 w-5" />
+                                                <CardTitle>Personal Details</CardTitle>
+                                            </div>
+                                            <CardDescription>Core student personal information</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="firstName"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>First Name <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Ahmed" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="lastName"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Last Name <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Mohamed" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="gender"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Gender <RequiredStar /></FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select gender" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="Male">Male</SelectItem>
+                                                                    <SelectItem value="Female">Female</SelectItem>
+                                                                    <SelectItem value="Other">Other</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="dateOfBirth"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Date of Birth <RequiredStar /></FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                'pl-3 text-left font-normal',
+                                                                                !field.value && 'text-muted-foreground'
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, 'PPP')
+                                                                            ) : (
+                                                                                <span>Pick a date</span>
+                                                                            )}
+                                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <Calendar
+                                                                        mode="single"
+                                                                        selected={field.value}
+                                                                        onSelect={field.onChange}
+                                                                        disabled={(date) =>
+                                                                            date > new Date() || date < new Date('1900-01-01')
+                                                                        }
+                                                                        captionLayout="dropdown"
+                                                                        fromYear={1900}
+                                                                        toYear={new Date().getFullYear()}
+                                                                        initialFocus
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="nationality"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Nationality <RequiredStar /></FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select country" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {nationalityCountries.map((country) => (
+                                                                        <SelectItem key={country.id} value={country.id}>
+                                                                            {country.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="passportNumber"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Passport Number <RequiredStar /></FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="P123456789" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="passportIssueDate"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Passport Issue Date <RequiredStar /></FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                'pl-3 text-left font-normal',
+                                                                                !field.value && 'text-muted-foreground'
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, 'PPP')
+                                                                            ) : (
+                                                                                <span>Pick a date</span>
+                                                                            )}
+                                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <Calendar
+                                                                        mode="single"
+                                                                        selected={field.value}
+                                                                        onSelect={field.onChange}
+                                                                        disabled={(date) => date > new Date()}
+                                                                        captionLayout="dropdown"
+                                                                        fromYear={1950}
+                                                                        toYear={new Date().getFullYear()}
+                                                                        initialFocus
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="passportExpiryDate"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Passport Expiry Date <RequiredStar /></FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                'pl-3 text-left font-normal',
+                                                                                !field.value && 'text-muted-foreground'
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, 'PPP')
+                                                                            ) : (
+                                                                                <span>Pick a date</span>
+                                                                            )}
+                                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <Calendar
+                                                                        mode="single"
+                                                                        selected={field.value}
+                                                                        onSelect={field.onChange}
+                                                                        disabled={(date) =>
+                                                                            date < new Date() || date > new Date('2090-12-31')
+                                                                        }
+                                                                        captionLayout="dropdown"
+                                                                        fromYear={new Date().getFullYear()}
+                                                                        toYear={2090}
+                                                                        initialFocus
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Section 3: Contact & Address Information */}
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-center gap-2">
+                                                <Phone className="h-5 w-5" />
+                                                <CardTitle>Contact & Address Information</CardTitle>
+                                            </div>
+                                            <CardDescription>Contact details, address, and family information</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-6">
+                                            {/* Contact Section */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-sm font-semibold">Contact</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="email"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Email <RequiredStar /></FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="email" placeholder="ahmed@example.com" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="mobile"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Mobile <RequiredStar /></FormLabel>
+                                                                <FormControl>
+                                                                    <PhoneInput
+                                                                        defaultCountry="eg"
+                                                                        value={field.value}
+                                                                        onChange={field.onChange}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Address Section */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-sm font-semibold">Address</h3>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="addressLine1"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Address Line 1</FormLabel>
+                                                                <FormControl>
+                                                                    <Textarea placeholder="Street address" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="cityDistrict"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>City/District</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="Cairo" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="stateProvince"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>State/Province</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="Cairo Governorate" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="postalCode"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Postal Code</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="12345" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="addressCountry"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Country</FormLabel>
+                                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger>
+                                                                                <SelectValue placeholder="Select country" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            {allCountries.map((country) => (
+                                                                                <SelectItem key={country.id} value={country.id}>
+                                                                                    {country.name}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Family Information */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-sm font-semibold">Family Information</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="fatherName"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Father Name <RequiredStar /></FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="Mohamed Ali" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="fatherMobile"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Father Mobile</FormLabel>
+                                                                <FormControl>
+                                                                    <PhoneInput
+                                                                        defaultCountry="eg"
+                                                                        value={field.value || ''}
+                                                                        onChange={field.onChange}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="fatherOccupation"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Father Occupation</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="Engineer" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="motherName"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Mother Name</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="Fatima Ahmed" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="motherMobile"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Mother Mobile</FormLabel>
+                                                                <FormControl>
+                                                                    <PhoneInput
+                                                                        defaultCountry="eg"
+                                                                        value={field.value || ''}
+                                                                        onChange={field.onChange}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="motherOccupation"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Mother Occupation</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="Teacher" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Section 4: Academic Information */}
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-center gap-2">
+                                                <GraduationCap className="h-5 w-5" />
+                                                <CardTitle>Academic Information</CardTitle>
+                                            </div>
+                                            <CardDescription>Education history and qualifications</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-6">
+                                            <div className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="educationLevelId"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Current Education Level</FormLabel>
+                                                            <Select
+                                                                onValueChange={(value) => {
+                                                                    const selected = degrees.find(d => d.id === value);
+                                                                    field.onChange(value);
+                                                                    form.setValue('educationLevelName', selected?.name || '');
+                                                                }}
+                                                                defaultValue={field.value}
+                                                            >
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select education level" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {degrees.map((degree) => (
+                                                                        <SelectItem key={degree.id} value={degree.id}>
+                                                                            {degree.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            {/* High School Information */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-sm font-semibold">High School Information</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="highSchoolCountry"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>High School Country</FormLabel>
+                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                    <FormControl>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select country" />
+                                                                        </SelectTrigger>
+                                                                    </FormControl>
+                                                                    <SelectContent>
+                                                                        {allCountries.map((country) => (
+                                                                            <SelectItem key={country.id} value={country.id}>
+                                                                                {country.name}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="highSchoolName"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>High School Name</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="Cairo International School" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="highSchoolGpa"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>High School GPA</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="3.5" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Bachelor Information */}
+                                            {(watchEducationLevel?.toLowerCase() === 'master' || watchEducationLevel?.toLowerCase() === 'phd') && (
+                                                <div className="space-y-4">
+                                                    <h3 className="text-sm font-semibold">Bachelor Information</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="bachelorCountry"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Bachelor Country</FormLabel>
+                                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger>
+                                                                                <SelectValue placeholder="Select country" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            {allCountries.map((country) => (
+                                                                                <SelectItem key={country.id} value={country.id}>
+                                                                                    {country.name}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="bachelorSchoolName"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Bachelor School Name</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="Cairo University" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="bachelorGpa"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Bachelor GPA</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="3.5" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Master Information */}
+                                            {watchEducationLevel?.toLowerCase() === 'phd' && (
+                                                <div className="space-y-4">
+                                                    <h3 className="text-sm font-semibold">Master Information</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="masterCountry"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Master Country</FormLabel>
+                                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger>
+                                                                                <SelectValue placeholder="Select country" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            {allCountries.map((country) => (
+                                                                                <SelectItem key={country.id} value={country.id}>
+                                                                                    {country.name}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="masterSchoolName"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Master School Name</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="Cairo University" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="masterGpa"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Master GPA</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input placeholder="3.8" {...field} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Documents Section */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                <CardTitle>Documents</CardTitle>
+                            </div>
+                            <CardDescription>Document upload will be available soon</CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                    {/* Save Button */}
+                    <div className="flex justify-end gap-2">
+                        <Link href={`/students/${studentId}`}>
+                            <Button type="button" variant="outline">
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                        </Button>
+                    </div>
+                </form>
+            </Form>
+        </div>
+    );
+}

@@ -1,0 +1,21 @@
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+
+                                {/* Navigation Button */}
+                                <div className="flex justify-end">
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        <Save className="mr-2 h-4 w-4" />
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+                    </div>
+                );
+            }
+}

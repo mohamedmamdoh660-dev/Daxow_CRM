@@ -1,0 +1,15 @@
+node_modules
+.next
+.env
+.env.local
+dist
+build
+*.log
+.DS_Store
+coverage
+.vercel
+.turbo
+
+# Local file uploads (fallback when Supabase is not configured)
+/public/uploads/*
+!/public/uploads/.gitkeep

@@ -1,0 +1,145 @@
+
+                {/* Section 5: Documents */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            <CardTitle>Documents</CardTitle>
+                        </div>
+                        <CardDescription>Upload or manage student documents</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {existingDocuments.length > 0 && (
+                            <div className="space-y-2">
+                                <h3 className="text-sm font-semibold">Existing Documents</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {existingDocuments.map((doc) => (
+                                        <div
+                                            key={doc.id}
+                                            className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
+                                        >
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <FileText className="h-4 w-4 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">
+                                                        {doc.fileName}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {(doc.fileSize / 1024).toFixed(2)} KB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => window.open(doc.fileUrl, '_blank')}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={async () => {
+                                                        if (confirm(`Delete ${doc.fileName}?`)) {
+                                                            try {
+                                                                const res = await fetch(`/api/documents/${doc.id}`, {
+                                                                    method: 'DELETE',
+                                                                });
+                                                                if (res.ok) {
+                                                                    setExistingDocuments(prev => 
+                                                                        prev.filter(d => d.id !== doc.id)
+                                                                    );
+                                                                    toast.success('Document deleted');
+                                                                } else {
+                                                                    toast.error('Failed to delete');
+                                                                }
+                                                            } catch (error) {
+                                                                toast.error('Error deleting document');
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <h3 className="text-sm font-semibold">Upload New Document</h3>
+                            <div className="border-2 border-dashed rounded-lg p-6">
+                                <Input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        if (file.size > 10 * 1024 * 1024) {
+                                            toast.error('File size must be less than 10MB');
+                                            return;
+                                        }
+
+                                        setUploading('new');
+                                        try {
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            formData.append('documentType', 'other');
+
+                                            const response = await fetch('/api/upload', {
+                                                method: 'POST',
+                                                body: formData,
+                                            });
+
+                                            if (!response.ok) {
+                                                throw new Error('Upload failed');
+                                            }
+
+                                            const data = await response.json();
+
+                                            // Create document record
+                                            const docResponse = await fetch('/api/documents', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    studentId,
+                                                    fileName: file.name,
+                                                    fileType: 'other',
+                                                    fileUrl: data.fileUrl,
+                                                    fileSize: file.size,
+                                                }),
+                                            });
+
+                                            if (docResponse.ok) {
+                                                const newDoc = await docResponse.json();
+                                                setExistingDocuments(prev => [...prev, newDoc.document]);
+                                                toast.success('Document uploaded successfully');
+                                                e.target.value = '';
+                                            } else {
+                                                throw new Error('Failed to save document');
+                                            }
+                                        } catch (error) {
+                                            console.error('Upload error:', error);
+                                            toast.error('Failed to upload document');
+                                        } finally {
+                                            setUploading(null);
+                                        }
+                                    }}
+                                    disabled={uploading === 'new'}
+                                />
+                                {uploading === 'new' && (
+                                    <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                                        <Loader2 className="w-4 w-4 animate-spin" />
+                                        Uploading...
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
