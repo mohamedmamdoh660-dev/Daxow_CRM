@@ -55,7 +55,6 @@ export function EditCountryDialog({
             name: '',
             code: '',
             activeOnNationalities: true,
-            activeOnUniversity: true,
         },
     });
 

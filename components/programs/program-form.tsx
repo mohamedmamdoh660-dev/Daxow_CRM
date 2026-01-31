@@ -38,9 +38,9 @@ const formSchema = z.object({
     studyYears: z.string().optional(),
     officialTuition: z.string().optional(),
     discountedTuition: z.string().optional(),
-    tuitionCurrency: z.string().default('USD'),
-    isActive: z.boolean().default(false),
-    activeApplications: z.boolean().default(false),
+    tuitionCurrency: z.string().optional(),
+    isActive: z.boolean().optional(),
+    activeApplications: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

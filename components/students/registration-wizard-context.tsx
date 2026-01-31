@@ -14,12 +14,12 @@ export const formSchema = z.object({
     // Personal Details
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
-    gender: z.enum(['Male', 'Female', 'Other'], { required_error: 'Gender is required' }),
-    dateOfBirth: z.date({ required_error: 'Date of birth is required' }),
+    gender: z.enum(['Male', 'Female', 'Other']),
+    dateOfBirth: z.date(),
     nationality: z.string().min(1, 'Nationality is required'),
     passportNumber: z.string().min(1, 'Passport number is required'),
-    passportIssueDate: z.date({ required_error: 'Passport issue date is required' }),
-    passportExpiryDate: z.date({ required_error: 'Passport expiry date is required' }),
+    passportIssueDate: z.date(),
+    passportExpiryDate: z.date(),
 
     // Contact Information
     email: z.string().email('Invalid email address'),

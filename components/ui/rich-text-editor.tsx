@@ -106,14 +106,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
                 onBlur={() => setIsFocused(false)}
                 dangerouslySetInnerHTML={{ __html: value || '' }}
                 data-placeholder={placeholder}
-                style={{
-                    ...((!value || value === '') && {
-                        ":before": {
-                            content: placeholder,
-                            color: '#9ca3af',
-                        }
-                    })
-                }}
             />
 
             <style jsx>{`

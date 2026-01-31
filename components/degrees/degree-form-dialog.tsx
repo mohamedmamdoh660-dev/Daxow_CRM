@@ -29,7 +29,7 @@ import { Switch } from '@/components/ui/switch';
 const formSchema = z.object({
     name: z.string().min(1, 'Degree name is required'),
     code: z.string().optional(),
-    displayOrder: z.coerce.number().optional(),
+    displayOrder: z.number().optional(),
     isActive: z.boolean(),
 });
 

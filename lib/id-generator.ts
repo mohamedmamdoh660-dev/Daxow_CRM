@@ -24,8 +24,8 @@ export async function generateStudentId(): Promise<string> {
             },
         });
 
-        if (!latestStudent) {
-            // First student
+        if (!latestStudent || !latestStudent.studentId) {
+            // First student or studentId is null
             return 'STU-0001';
         }
 
