@@ -10,9 +10,16 @@ export async function createStudent(formData: Record<string, any>) {
     try {
         const { fixed, metadata } = separateFixedAndMetadata(formData, FIXED_STUDENT_FIELDS);
 
+        // Split fullName into firstName and lastName
+        const nameParts = (fixed.fullName || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         const student = await prisma.student.create({
             data: {
                 fullName: fixed.fullName,
+                firstName,
+                lastName,
                 email: fixed.email,
                 phone: fixed.phone || null,
                 passportNumber: fixed.passportNumber || null,
@@ -26,6 +33,7 @@ export async function createStudent(formData: Record<string, any>) {
         // Create timeline event
         await prisma.timelineEvent.create({
             data: {
+                title: 'Student Created',
                 entityType: 'Student',
                 entityId: student.id,
                 studentId: student.id,
@@ -64,6 +72,7 @@ export async function updateStudent(id: string, formData: Record<string, any>) {
         // Create timeline event
         await prisma.timelineEvent.create({
             data: {
+                title: 'Student Updated',
                 entityType: 'Student',
                 entityId: student.id,
                 studentId: student.id,
@@ -170,15 +179,8 @@ export async function getStudent(id: string) {
                 agent: true,
                 applications: {
                     include: {
-                        program: {
-                            include: {
-                                university: true,
-                            },
-                        },
+                        program: true,
                     },
-                    orderBy: { createdAt: 'desc' },
-                },
-                documents: {
                     orderBy: { createdAt: 'desc' },
                 },
                 timeline: {
