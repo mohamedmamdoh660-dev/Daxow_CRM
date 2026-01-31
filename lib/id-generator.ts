@@ -62,8 +62,8 @@ export async function generateLeadId(): Promise<string> {
             },
         });
 
-        if (!latestLead) {
-            // First lead
+        if (!latestLead || !latestLead.leadId) {
+            // First lead or leadId is null
             return 'LEAD-0001';
         }
 
@@ -85,18 +85,13 @@ export async function generateLeadId(): Promise<string> {
  */
 export async function generateApplicationId(): Promise<string> {
     try {
-        // Get the latest application by applicationId
+        // Get the latest application by createdAt (since applicationId doesn't exist in schema)
         const latestApp = await prisma.application.findFirst({
-            where: {
-                applicationId: {
-                    startsWith: 'APP-',
-                },
-            },
             orderBy: {
-                applicationId: 'desc',
+                createdAt: 'desc',
             },
             select: {
-                applicationId: true,
+                id: true,
             },
         });
 
@@ -105,9 +100,9 @@ export async function generateApplicationId(): Promise<string> {
             return 'APP-0001';
         }
 
-        // Extract number from APP-0001
-        const lastNumber = parseInt(latestApp.applicationId.replace('APP-', ''));
-        const nextNumber = lastNumber + 1;
+        // Since we don't have applicationId in schema, use row count + 1
+        const count = await prisma.application.count();
+        const nextNumber = count + 1;
 
         // Format with leading zeros (4 digits)
         return `APP-${nextNumber.toString().padStart(4, '0')}`;
