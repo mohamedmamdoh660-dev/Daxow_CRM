@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Save to database
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             // Update or create SUPABASE_URL
             await tx.setting.upsert({
                 where: { key: 'SUPABASE_URL' },
