@@ -43,7 +43,7 @@ export async function PATCH(
 ) {
     const { id } = await params;
     const body = await request.json();
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('access_token')?.value;
 
     try {

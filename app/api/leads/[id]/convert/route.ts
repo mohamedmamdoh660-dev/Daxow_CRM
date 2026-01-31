@@ -75,7 +75,7 @@ export async function POST(
                 addressCountry: lead.country,
                 // Copy notes to metadata
                 metadata: {
-                    ...lead.metadata,
+                    ...(typeof lead.metadata === 'object' && lead.metadata ? lead.metadata : {}),
                     convertedFromLeadId: lead.id,
                     leadNotes: lead.notes,
                     preferredIntake: lead.preferredIntake,
@@ -98,7 +98,7 @@ export async function POST(
                         fileUrl: doc.fileUrl,
                         fileSize: doc.fileSize,
                         metadata: {
-                            ...doc.metadata,
+                            ...(typeof doc.metadata === 'object' && doc.metadata ? doc.metadata : {}),
                             copiedFromLead: lead.id,
                         },
                     },

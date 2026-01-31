@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const token = cookieStore.get('access_token')?.value;
 
         const res = await fetch(`${BACKEND_URL}/api/faculties`, {
