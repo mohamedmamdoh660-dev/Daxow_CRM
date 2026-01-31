@@ -46,6 +46,7 @@ export async function createTimelineEvent({
     leadId,
     applicationId,
     eventType,
+    title,
     description,
     metadata = {},
     performedBy,
@@ -56,6 +57,7 @@ export async function createTimelineEvent({
     leadId?: string;
     applicationId?: string;
     eventType: string;
+    title?: string;
     description: string;
     metadata?: any;
     performedBy?: string;
@@ -65,13 +67,14 @@ export async function createTimelineEvent({
             data: {
                 entityType,
                 entityId,
-                studentId,
-                leadId,
-                applicationId,
+                ...(studentId && { studentId }),
+                ...(leadId && { leadId }),
+                ...(applicationId && { applicationId }),
                 eventType,
+                title: title || eventType,
                 description,
                 metadata,
-                performedBy,
+                ...(performedBy && { performedBy }),
             },
         });
 
@@ -93,13 +96,20 @@ export async function createTimelineEvents(events: Array<{
     studentId?: string;
     applicationId?: string;
     eventType: string;
+    title?: string;
     description: string;
     metadata?: any;
     performedBy?: string;
 }>) {
     try {
+        // Ensure all events have required title field
+        const eventsWithTitle = events.map(event => ({
+            ...event,
+            title: event.title || event.eventType,
+        }));
+
         const result = await prisma.timelineEvent.createMany({
-            data: events,
+            data: eventsWithTitle,
         });
 
         console.log(`✅ ${result.count} timeline events created`);
