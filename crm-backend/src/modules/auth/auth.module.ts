@@ -14,10 +14,18 @@ import { DatabaseModule } from '../../database/database.module';
         PassportModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET') || 'FALLBACK_SECRET_DO_NOT_USE_IN_PROD',
-                signOptions: { expiresIn: '1d' },
-            }),
+            useFactory: async (configService: ConfigService) => {
+                const jwtSecret = configService.get<string>('JWT_SECRET');
+
+                if (!jwtSecret) {
+                    throw new Error('FATAL: JWT_SECRET environment variable is not set. Application cannot start without it.');
+                }
+
+                return {
+                    secret: jwtSecret,
+                    signOptions: { expiresIn: '7d' }, // Extended for testing convenience
+                };
+            },
             inject: [ConfigService],
         }),
     ],
