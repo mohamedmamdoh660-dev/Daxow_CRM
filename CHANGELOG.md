@@ -2,6 +2,25 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-01-31] - Critical Security Fix: JWT Secret Hardening
+
+### Security
+- **CRITICAL**: Removed hardcoded JWT secret fallback (`FALLBACK_SECRET_DO_NOT_USE_IN_PROD`)
+- Added strict validation: Backend now fails to start if `JWT_SECRET` environment variable is not set
+- Updated `crm-backend/src/modules/auth/strategies/jwt.strategy.ts` with proper secret validation
+- Updated `crm-backend/src/modules/auth/auth.module.ts` with proper secret validation
+- Generated cryptographically secure JWT secret using `openssl rand -base64 32`
+- Extended JWT token expiration from 1 day to 7 days for testing convenience
+- Updated `crm-backend/.env.example` to use correct `JWT_EXPIRES_IN` variable name
+
+### Files Modified
+- `crm-backend/src/modules/auth/strategies/jwt.strategy.ts`
+- `crm-backend/src/modules/auth/auth.module.ts`
+- `crm-backend/.env.example`
+- `crm-backend/.env` (local only, not committed)
+
+---
+
 ## [2026-01-28] - Student Module Refactoring: Academic History ✅
 
 ### Refactored
