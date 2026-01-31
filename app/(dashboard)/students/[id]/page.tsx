@@ -366,7 +366,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 <TabsContent value="documents" className="space-y-6">
                     <div className="grid gap-4 md:grid-cols-3">
                         {student.studentDocuments && student.studentDocuments.length > 0 ? (
-                            student.studentDocuments.map((doc) => (
+                            student.studentDocuments.map((doc: any) => (
                                 <Card key={doc.id} className="hover:shadow-lg transition-shadow">
                                     <CardContent className="pt-6">
                                         <div className="flex flex-col items-center text-center space-y-3">
