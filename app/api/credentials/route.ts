@@ -16,7 +16,7 @@ export async function GET() {
         });
 
         // Decrypt credentials for display
-        const decryptedCredentials = credentials.map((cred) => {
+        const decryptedCredentials = credentials.map((cred: any) => {
             const value = cred.value as any;
 
             try {
