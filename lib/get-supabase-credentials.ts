@@ -20,7 +20,7 @@ export async function getSupabaseCredentials(): Promise<SupabaseCredentials | nu
         });
 
         // Find the Supabase credential
-        const supabaseSetting = settings.find((s) => {
+        const supabaseSetting = settings.find((s: any) => {
             const value = s.value as any;
             return value?.provider === 'supabase';
         });
