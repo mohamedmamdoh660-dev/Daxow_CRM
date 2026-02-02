@@ -69,8 +69,8 @@ export async function GET() {
         });
 
         // value is Json type, could be string or object
-        const urlSetting = settings.find(s => s.key === 'SUPABASE_URL');
-        const keySetting = settings.find(s => s.key === 'SUPABASE_SERVICE_KEY');
+        const urlSetting = settings.find((s: any) => s.key === 'SUPABASE_URL');
+        const keySetting = settings.find((s: any) => s.key === 'SUPABASE_SERVICE_KEY');
 
         const url = typeof urlSetting?.value === 'string' ? urlSetting.value : '';
         const key = typeof keySetting?.value === 'string' ? keySetting.value : '';
