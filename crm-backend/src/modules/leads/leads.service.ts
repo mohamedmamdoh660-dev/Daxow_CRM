@@ -276,7 +276,7 @@ export class LeadsService {
         const studentId = `STU-${String(nextNumber).padStart(4, '0')}`;
 
         // Create student in a transaction
-        const student = await this.prisma.$transaction(async (tx) => {
+        const student = await this.prisma.$transaction(async (tx: any) => {
             // Split full name
             const nameParts = (lead.fullName || '').trim().split(' ');
             const firstName = nameParts[0] || '';

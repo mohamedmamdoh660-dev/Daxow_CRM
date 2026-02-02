@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         const studentId = await generateStudentId();
 
         // Create student with documents in a transaction
-        const student = await prisma.$transaction(async (tx) => {
+        const student = await prisma.$transaction(async (tx: any) => {
             // Create student
             const newStudent = await tx.student.create({
                 data: {
