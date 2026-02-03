@@ -461,7 +461,7 @@ export default function ProfilePage() {
                                             type="password"
                                             value={passwordForm.newPassword}
                                             onChange={(e) =>
-                                                setPasswordForm({ ...profileForm, newPassword: e.target.value })
+                                                setPasswordForm({ ...passwordForm, newPassword: e.target.value })
                                             }
                                             placeholder="Enter new password"
                                             className="h-11"
