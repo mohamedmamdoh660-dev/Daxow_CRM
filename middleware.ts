@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_ROUTES = ['/', '/login'];
 
 // API routes to allow (authentication routes)
-const PUBLIC_API_ROUTES = ['/api/auth/login'];
+const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/logout'];
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;

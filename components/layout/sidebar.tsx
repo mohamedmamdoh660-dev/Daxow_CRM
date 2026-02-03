@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
@@ -20,7 +20,9 @@ import {
     Award,
     Globe,
     User,
+    LogOut,
 } from 'lucide-react';
+import { useState } from 'react';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -44,6 +46,30 @@ const navigation = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const handleLogout = async () => {
+        if (isLoggingOut) return;
+
+        setIsLoggingOut(true);
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+            });
+
+            if (response.ok) {
+                // Redirect to login page
+                router.push('/login');
+            } else {
+                console.error('Logout failed');
+                setIsLoggingOut(false);
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            setIsLoggingOut(false);
+        }
+    };
 
     return (
         <div className="flex h-screen w-64 flex-col fixed left-0 top-0 border-r bg-card">
@@ -76,6 +102,23 @@ export function Sidebar() {
                     );
                 })}
             </nav>
+
+            {/* Logout Button */}
+            <div className="border-t p-3">
+                <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className={cn(
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                        'text-destructive hover:bg-destructive/10 hover:text-destructive',
+                        isLoggingOut && 'opacity-50 cursor-not-allowed'
+                    )}
+                >
+                    <LogOut className="h-5 w-5" />
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
+                </button>
+            </div>
         </div>
     );
 }
+
