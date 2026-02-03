@@ -1,0 +1,7 @@
+-- Add new profile fields to User table
+ALTER TABLE "User" 
+ADD COLUMN IF NOT EXISTS "firstName" TEXT,
+ADD COLUMN IF NOT EXISTS "lastName" TEXT,
+ADD COLUMN IF NOT EXISTS "phone" TEXT,
+ADD COLUMN IF NOT EXISTS "profileImage" TEXT,
+ADD COLUMN IF NOT EXISTS "lastLogin" TIMESTAMP(3);

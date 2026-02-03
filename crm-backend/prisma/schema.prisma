@@ -412,17 +412,22 @@ model AutomationRule {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("staff")
-  avatar    String?
-  isActive  Boolean  @default(true)
-  metadata  Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  programs  Program[]
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  name         String
+  firstName    String?
+  lastName     String?
+  phone        String?
+  profileImage String?
+  role         String    @default("staff")
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  metadata     Json      @default("{}")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  programs     Program[]
 
   @@index([email])
   @@index([role])

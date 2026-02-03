@@ -19,6 +19,7 @@ import {
     Languages,
     Award,
     Globe,
+    User,
 } from 'lucide-react';
 
 const navigation = [
@@ -37,6 +38,7 @@ const navigation = [
     { name: 'Cities', href: '/cities', icon: MapPin },
     { name: 'Languages', href: '/languages', icon: Languages },
     { name: 'Agents', href: '/agents', icon: Briefcase },
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
