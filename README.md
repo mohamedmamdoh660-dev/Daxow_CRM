@@ -88,6 +88,10 @@ npm run dev
 
 Comprehensive documentation is available in the `/docs` directory:
 
+- **[User Management](./docs/user-management/)** - Authentication and profile management
+  - [Authentication](./docs/user-management/authentication.md) - Login/logout flow and JWT security
+  - [Profile Management](./docs/user-management/profile.md) - User profiles and settings
+
 - **[Lead Management](./docs/lead-management/)** - Lead tracking, notes, documents, emails, tasks, and conversion
   - [Overview](./docs/lead-management/overview.md) - Complete feature guide
   - [Components](./docs/lead-management/components.md) - Technical component docs
