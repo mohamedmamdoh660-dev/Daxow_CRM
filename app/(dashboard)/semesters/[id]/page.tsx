@@ -26,7 +26,7 @@ export default function SemesterDetailsPage() {
 
     const fetchSemester = async () => {
         try {
-            const response = await fetch(`http://localhost:3001/api/semesters/${params.id}`);
+            const response = await fetch(`/api/semesters/${params.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setSemester(data);

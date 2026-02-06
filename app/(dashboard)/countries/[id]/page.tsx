@@ -58,7 +58,7 @@ export default function CountryViewPage({ params }: { params: Promise<{ id: stri
     const fetchCountry = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:3001/api/countries/${id}`);
+            const response = await fetch(`/api/countries/${id}`);
             if (response.ok) {
                 const data = await response.json();
                 setCountry(data);
@@ -77,7 +77,7 @@ export default function CountryViewPage({ params }: { params: Promise<{ id: stri
         try {
             setCitiesLoading(true);
             // Fetch cities filtered by this country ID
-            const response = await fetch(`http://localhost:3001/api/cities?countryId=${id}&take=100`);
+            const response = await fetch(`/api/cities?countryId=${id}&take=100`);
             if (response.ok) {
                 const data = await response.json();
                 setCities(data.data);
@@ -100,7 +100,7 @@ export default function CountryViewPage({ params }: { params: Promise<{ id: stri
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/countries/${id}`,
+                `/api/countries/${id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }

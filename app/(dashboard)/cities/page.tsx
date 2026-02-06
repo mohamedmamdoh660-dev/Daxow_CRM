@@ -27,7 +27,7 @@ export default function CitiesPage() {
     const fetchCities = useCallback(async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:3001/api/cities?page=${page}&pageSize=${pageSize}`;
+            let url = `/api/cities?page=${page}&pageSize=${pageSize}`;
             if (searchQuery) {
                 url += `&search=${encodeURIComponent(searchQuery)}`;
             }

@@ -26,7 +26,7 @@ export default function FacultiesPage() {
         setIsLoading(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/faculties?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
+                `/api/faculties?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
             );
 
             if (response.ok) {

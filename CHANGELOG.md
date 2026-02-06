@@ -25,6 +25,9 @@ All notable changes to the Admission CRM project will be documented in this file
   - `Timeline` (Shared Component)
 - **Authentication**: All requests now flow through the Next.js backend proxy, which attaches the `access_token` correctly, resolving `401 Unauthorized` errors.
 
+### Hotfix
+- **Dashboard Pages**: fixed remaining hardcoded `http://localhost:3001` references in client-side pages (Countries, Cities, Faculties, etc.) that were causing connection refused errors in production.
+
 ## [2026-02-03] - Logout Functionality & Authentication Security
 
 ### Added

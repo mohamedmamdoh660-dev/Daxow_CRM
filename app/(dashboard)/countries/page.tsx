@@ -27,7 +27,7 @@ export default function CountriesPage() {
     const fetchCountries = useCallback(async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:3001/api/countries?page=${page}&pageSize=${pageSize}`;
+            let url = `/api/countries?page=${page}&pageSize=${pageSize}`;
             if (searchQuery) {
                 url += `&search=${encodeURIComponent(searchQuery)}`;
             }

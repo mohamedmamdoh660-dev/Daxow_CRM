@@ -27,7 +27,7 @@ export default function AcademicYearDetailsPage() {
 
     const fetchAcademicYear = async () => {
         try {
-            const response = await fetch(`http://localhost:3001/api/academic-years/${params.id}`);
+            const response = await fetch(`/api/academic-years/${params.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setAcademicYear(data);

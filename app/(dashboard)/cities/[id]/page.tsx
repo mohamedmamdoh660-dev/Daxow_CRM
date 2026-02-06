@@ -45,7 +45,7 @@ export default function CityViewPage({ params }: { params: Promise<{ id: string 
     const fetchCity = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:3001/api/cities/${id}`);
+            const response = await fetch(`/api/cities/${id}`);
             if (response.ok) {
                 const data = await response.json();
                 setCity(data);
@@ -70,7 +70,7 @@ export default function CityViewPage({ params }: { params: Promise<{ id: string 
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/cities/${id}`,
+                `/api/cities/${id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }

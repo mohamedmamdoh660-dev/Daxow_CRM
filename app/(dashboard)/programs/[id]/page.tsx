@@ -4,8 +4,9 @@ import { notFound } from 'next/navigation';
 export default async function EditProgramPage({ params }: { params: { id: string } }) {
     // Determine API URL based on environment or use absolute URL if server-side fetch requires it
     // Using localhost for server-side fetch during dev
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
     try {
-        const res = await fetch(`http://localhost:3001/api/programs/${params.id}`, {
+        const res = await fetch(`${BACKEND_URL}/api/programs/${params.id}`, {
             cache: 'no-store'
         });
 
