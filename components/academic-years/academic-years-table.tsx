@@ -83,7 +83,7 @@ export function AcademicYearsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/academic-years/${id}`, {
+                fetch(`/api/academic-years/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -106,7 +106,7 @@ export function AcademicYearsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/academic-years/${id}`, {
+                fetch(`/api/academic-years/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

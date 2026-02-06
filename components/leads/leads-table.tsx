@@ -91,7 +91,7 @@ export function LeadsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/leads/${id}`, {
+                fetch(`/api/leads/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -114,7 +114,7 @@ export function LeadsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/leads/${id}`, {
+                fetch(`/api/leads/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

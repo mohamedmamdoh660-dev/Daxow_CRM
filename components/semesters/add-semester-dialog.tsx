@@ -67,7 +67,7 @@ export function AddSemesterDialog({
     const onSubmit = async (values: FormValues) => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:3001/api/semesters', {
+            const response = await fetch('/api/semesters', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),

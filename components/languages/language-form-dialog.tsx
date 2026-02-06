@@ -78,8 +78,8 @@ export function LanguageFormDialog({
         setIsSubmitting(true);
         try {
             const url = languageToEdit
-                ? `http://localhost:3001/api/languages/${languageToEdit.id}`
-                : 'http://localhost:3001/api/languages';
+                ? `/api/languages/${languageToEdit.id}`
+                : '/api/languages';
 
             const method = languageToEdit ? 'PATCH' : 'POST';
 

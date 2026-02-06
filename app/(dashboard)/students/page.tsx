@@ -19,7 +19,7 @@ export default function StudentsPage() {
         setLoading(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/students?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
+                `/api/students?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
             );
 
             if (response.ok) {

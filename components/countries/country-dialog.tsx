@@ -106,8 +106,8 @@ export function CountryDialog({
         setIsSubmitting(true);
         try {
             const url = country
-                ? `http://localhost:3001/api/countries/${country.id}`
-                : 'http://localhost:3001/api/countries';
+                ? `/api/countries/${country.id}`
+                : '/api/countries';
 
             const method = country ? 'PATCH' : 'POST';
 

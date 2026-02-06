@@ -72,7 +72,7 @@ export function EditAcademicYearDialog({
         setIsSubmitting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/academic-years/${academicYear.id}`,
+                `/api/academic-years/${academicYear.id}`,
                 {
                     method: 'PATCH',
                     headers: {

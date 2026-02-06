@@ -2,6 +2,29 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-06] - Database Connection Repair 🔧
+
+### Fixed
+- **Database Connection**: Resolved connectivity issues between CRM and Supabase.
+- **Prisma Client**: Generated missing Prisma Clients for both Backend and Frontend.
+- **Migrations**: Synchronized database migration state to match existing schema without data loss.
+- **Server Startup**: Successfully started both Backend (Port 3001) and Frontend (Port 3000) with verified database capabilities.
+
+## [2026-02-06] - API Proxy Refactoring Refinement 🛠️
+
+### Refactored
+- **Front-Backend Communication**: Converted direct backend calls (`localhost:3001`) to Next.js API Proxy routes (`/api/...`) across the entire application to ensure consistent authentication and CORS handling.
+- **Modules Updated**:
+  - `Countries` (Dialogs & Tables)
+  - `Cities` (Dialogs & Tables)
+  - `Semesters` (Dialogs & Tables)
+  - `Academic Years` (Dialogs & Tables)
+  - `Languages` (Dialogs & Tables)
+  - `Specialties` (Dialogs & Tables)
+  - `Leads` (Tables & Actions)
+  - `Timeline` (Shared Component)
+- **Authentication**: All requests now flow through the Next.js backend proxy, which attaches the `access_token` correctly, resolving `401 Unauthorized` errors.
+
 ## [2026-02-03] - Logout Functionality & Authentication Security
 
 ### Added

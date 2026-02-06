@@ -40,7 +40,7 @@ export function StudentsRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/students/${student.id}`,
+                `/api/students/${student.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -65,7 +65,7 @@ export function StudentsRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/students/${student.id}`,
+                `/api/students/${student.id}`,
                 {
                     method: 'PATCH',
                     headers: {

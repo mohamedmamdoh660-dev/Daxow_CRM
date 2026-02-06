@@ -40,7 +40,7 @@ export function LeadsRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/leads/${lead.id}`,
+                `/api/leads/${lead.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -65,7 +65,7 @@ export function LeadsRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/leads/${lead.id}`,
+                `/api/leads/${lead.id}`,
                 {
                     method: 'PATCH',
                     headers: {

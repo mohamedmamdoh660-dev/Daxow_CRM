@@ -41,7 +41,7 @@ export function LanguagesRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/languages/${language.id}`,
+                `/api/languages/${language.id}`,
                 { method: 'DELETE' }
             );
 
@@ -63,7 +63,7 @@ export function LanguagesRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/languages/${language.id}`,
+                `/api/languages/${language.id}`,
                 {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },

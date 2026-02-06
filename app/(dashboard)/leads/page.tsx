@@ -26,7 +26,7 @@ export default function LeadsPage() {
         setLoading(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/leads?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
+                `/api/leads?page=${page}&pageSize=${pageSize}&search=${searchQuery}`
             );
 
             if (response.ok) {

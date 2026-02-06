@@ -72,7 +72,7 @@ export function EditSemesterDialog({
         setIsSubmitting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/semesters/${semester.id}`,
+                `/api/semesters/${semester.id}`,
                 {
                     method: 'PATCH',
                     headers: {

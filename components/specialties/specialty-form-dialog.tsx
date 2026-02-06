@@ -69,7 +69,7 @@ export function SpecialtyFormDialog({
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:3001/api/faculties?pageSize=100&isActive=true');
+                const response = await fetch('/api/faculties?pageSize=100&isActive=true');
                 if (response.ok) {
                     const data = await response.json();
                     setFaculties(data.data || []);
@@ -105,8 +105,8 @@ export function SpecialtyFormDialog({
         setIsSubmitting(true);
         try {
             const url = specialtyToEdit
-                ? `http://localhost:3001/api/specialties/${specialtyToEdit.id}`
-                : 'http://localhost:3001/api/specialties';
+                ? `/api/specialties/${specialtyToEdit.id}`
+                : '/api/specialties';
 
             const method = specialtyToEdit ? 'PATCH' : 'POST';
 

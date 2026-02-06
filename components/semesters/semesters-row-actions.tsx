@@ -41,7 +41,7 @@ export function SemestersRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/semesters/${semester.id}`,
+                `/api/semesters/${semester.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -66,7 +66,7 @@ export function SemestersRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/semesters/${semester.id}`,
+                `/api/semesters/${semester.id}`,
                 {
                     method: 'PATCH',
                     headers: {

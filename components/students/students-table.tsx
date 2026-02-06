@@ -85,7 +85,7 @@ export function StudentsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/students/${id}`, {
+                fetch(`/api/students/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -108,7 +108,7 @@ export function StudentsTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/students/${id}`, {
+                fetch(`/api/students/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

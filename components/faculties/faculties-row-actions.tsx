@@ -39,7 +39,7 @@ export function FacultiesRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/faculties/${faculty.id}`,
+                `/api/faculties/${faculty.id}`,
                 { method: 'DELETE' }
             );
 
@@ -61,7 +61,7 @@ export function FacultiesRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/faculties/${faculty.id}`,
+                `/api/faculties/${faculty.id}`,
                 {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },

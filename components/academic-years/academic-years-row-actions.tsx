@@ -42,7 +42,7 @@ export function AcademicYearsRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/academic-years/${academicYear.id}`,
+                `/api/academic-years/${academicYear.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -67,7 +67,7 @@ export function AcademicYearsRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/academic-years/${academicYear.id}`,
+                `/api/academic-years/${academicYear.id}`,
                 {
                     method: 'PATCH',
                     headers: {

@@ -41,7 +41,7 @@ export function SpecialtiesRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/specialties/${specialty.id}`,
+                `/api/specialties/${specialty.id}`,
                 { method: 'DELETE' }
             );
 
@@ -63,7 +63,7 @@ export function SpecialtiesRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/specialties/${specialty.id}`,
+                `/api/specialties/${specialty.id}`,
                 {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },

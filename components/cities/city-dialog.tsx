@@ -73,7 +73,7 @@ export function CityDialog({
         async function fetchCountries() {
             try {
                 // Fetch active countries with a high limit for the dropdown
-                const response = await fetch('http://localhost:3001/api/countries?isActive=true&take=100');
+                const response = await fetch('/api/countries?isActive=true&take=100');
                 if (response.ok) {
                     const result = await response.json();
                     setCountries(result.data || []);
@@ -108,8 +108,8 @@ export function CityDialog({
         setIsSubmitting(true);
         try {
             const url = city
-                ? `http://localhost:3001/api/cities/${city.id}`
-                : 'http://localhost:3001/api/cities';
+                ? `/api/cities/${city.id}`
+                : '/api/cities';
 
             const method = city ? 'PATCH' : 'POST';
 

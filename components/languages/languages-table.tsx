@@ -82,7 +82,7 @@ export function LanguagesTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/languages/${id}`, {
+                fetch(`/api/languages/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -105,7 +105,7 @@ export function LanguagesTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/languages/${id}`, {
+                fetch(`/api/languages/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

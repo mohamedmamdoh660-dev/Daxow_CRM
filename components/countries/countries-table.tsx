@@ -53,7 +53,7 @@ export function CountriesTable({ data, onRefresh }: CountriesTableProps) {
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/countries/${id}`, {
+                fetch(`/api/countries/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -76,7 +76,7 @@ export function CountriesTable({ data, onRefresh }: CountriesTableProps) {
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/countries/${id}`, {
+                fetch(`/api/countries/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

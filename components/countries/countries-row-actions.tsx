@@ -42,7 +42,7 @@ export function CountriesRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/countries/${country.id}`,
+                `/api/countries/${country.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -67,7 +67,7 @@ export function CountriesRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/countries/${country.id}`,
+                `/api/countries/${country.id}`,
                 {
                     method: 'PATCH',
                     headers: {

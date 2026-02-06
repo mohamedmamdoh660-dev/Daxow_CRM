@@ -59,7 +59,7 @@ export function AddAcademicYearDialog({
     const onSubmit = async (values: FormValues) => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:3001/api/academic-years', {
+            const response = await fetch('/api/academic-years', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),

@@ -82,7 +82,7 @@ export function SpecialtiesTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/specialties/${id}`, {
+                fetch(`/api/specialties/${id}`, {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Bulk Delete' }
                 })
@@ -106,7 +106,7 @@ export function SpecialtiesTable({
         setIsDeleting(true);
         try {
             const promises = Array.from(selectedRows).map(id =>
-                fetch(`http://localhost:3001/api/specialties/${id}`, {
+                fetch(`/api/specialties/${id}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',

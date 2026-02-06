@@ -42,7 +42,7 @@ export function CitiesRowActions({
         setIsDeleting(true);
         try {
             const response = await fetch(
-                `http://localhost:3001/api/cities/${city.id}`,
+                `/api/cities/${city.id}`,
                 {
                     method: 'DELETE',
                     headers: { 'x-performed-by': 'Admin User' }
@@ -67,7 +67,7 @@ export function CitiesRowActions({
     const handleToggleActive = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3001/api/cities/${city.id}`,
+                `/api/cities/${city.id}`,
                 {
                     method: 'PATCH',
                     headers: {

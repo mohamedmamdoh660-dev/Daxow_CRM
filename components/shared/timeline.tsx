@@ -38,7 +38,7 @@ export function Timeline({ entityType, entityId }: TimelineProps) {
         const fetchTimeline = async () => {
             try {
                 const response = await fetch(
-                    `http://localhost:3001/api/timeline/${entityType}/${entityId}`
+                    `/api/timeline/${entityType}/${entityId}`
                 );
                 if (response.ok) {
                     const data = await response.json();

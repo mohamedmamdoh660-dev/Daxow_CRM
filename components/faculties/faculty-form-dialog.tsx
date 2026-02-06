@@ -74,8 +74,8 @@ export function FacultyFormDialog({
         setIsSubmitting(true);
         try {
             const url = facultyToEdit
-                ? `http://localhost:3001/api/faculties/${facultyToEdit.id}`
-                : 'http://localhost:3001/api/faculties';
+                ? `/api/faculties/${facultyToEdit.id}`
+                : '/api/faculties';
 
             const method = facultyToEdit ? 'PATCH' : 'POST';
 
