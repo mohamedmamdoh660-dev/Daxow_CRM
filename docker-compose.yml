@@ -1,25 +1,6 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: ./crm-backend
-      dockerfile: Dockerfile
-    container_name: daxow-crm-backend
-    restart: always
-    ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    environment:
-      - PORT=3001
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - FRONTEND_URL=${FRONTEND_URL}
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-
   frontend:
     build:
       context: .
@@ -30,9 +11,11 @@ services:
       - "3000:3000"
     env_file:
       - .env
-    depends_on:
-      - backend
     environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - NODE_ENV=production
