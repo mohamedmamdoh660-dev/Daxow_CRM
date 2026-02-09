@@ -196,7 +196,8 @@ model Agent {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   students       Student[]
-
+  users          User[]
+  
   @@index([email])
   @@index([country])
 }
@@ -427,7 +428,13 @@ model User {
   metadata     Json      @default("{}")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
   programs     Program[]
+  
+  // Agent/Sub-Agent fields
+  agencyId       String?
+  commissionRate Decimal?  @db.Decimal(5, 2)
+  agency         Agent?    @relation(fields: [agencyId], references: [id])
 
   @@index([email])
   @@index([role])

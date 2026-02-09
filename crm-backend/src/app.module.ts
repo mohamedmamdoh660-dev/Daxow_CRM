@@ -18,6 +18,7 @@ import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { TitlesModule } from './modules/titles/titles.module';
 import { ProgramsModule } from './modules/programs/programs.module';
 import { DegreesModule } from './modules/degrees/degrees.module';
+import { AgentsModule } from './modules/agents/agents.module';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
@@ -45,6 +46,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     TitlesModule,
     ProgramsModule,
     DegreesModule,
+    AgentsModule,
   ],
   controllers: [AppController],
   providers: [
