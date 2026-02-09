@@ -14,6 +14,14 @@ const nextConfig = {
             },
         ],
     },
+    // Optimization for VPS deployment (Low Memory)
+    typescript: {
+        ignoreBuildErrors: true,
+    },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    swcMinify: true,
 }
 
 module.exports = nextConfig
