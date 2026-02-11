@@ -185,11 +185,11 @@ export const WizardProvider: React.FC<WizardProviderProps> = ({ children }) => {
 
                 if (nationalityRes.ok) {
                     const data = await nationalityRes.json();
-                    setNationalityCountries(data.countries || []);
+                    setNationalityCountries(data.data || []);
                 }
                 if (countriesRes.ok) {
                     const data = await countriesRes.json();
-                    setCountries(data.countries || []);
+                    setCountries(data.data || []);
                 }
                 if (degreesRes.ok) {
                     const data = await degreesRes.json();

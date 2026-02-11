@@ -2,6 +2,23 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-11] - Student Registration: Countries Dropdown Fix 🔧
+
+### Fixed
+- **Countries Dropdown Empty**: Resolved critical bug where Country and Nationality dropdowns in student registration form appeared empty despite data existing in database.
+- **Root Cause**: API response parsing error in `registration-wizard-context.tsx` - API returns `{data: [...]}` but code expected `{countries: [...]}`.
+- **Fix**: Changed `data.countries || []` to `data.data || []` on lines 188 and 192 in `registration-wizard-context.tsx`.
+- **Impact**: All country-related dropdowns (Nationality, Address Country, High School Country, Bachelor Country, Master Country) now correctly populate from the countries module via API.
+
+### Files Modified
+- `components/students/registration-wizard-context.tsx` - Fixed API response parsing
+
+### Testing
+- ✅ Nationality dropdown verified working
+- ✅ Address Country dropdown verified working  
+- ✅ High School Country dropdown verified working
+- ✅ Full integration with countries module confirmed
+
 ## [2026-02-06] - Database Connection Repair 🔧
 
 ### Fixed
