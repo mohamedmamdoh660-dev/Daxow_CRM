@@ -19,6 +19,22 @@ All notable changes to the Admission CRM project will be documented in this file
 - ✅ High School Country dropdown verified working
 - ✅ Full integration with countries module confirmed
 
+## [2026-02-11] - Lead Creation Fix 🔧
+
+### Fixed
+- **Lead Creation Error**: Resolved `400 Bad Request` error when creating new leads.
+- **Root Cause**: `CreateLeadDto` was missing the `documents` field, causing validation failure when frontend sent document data (even if empty).
+- **Fix**: Added `documents` array validation to `CreateLeadDto` and updated `LeadsService` to save documents using the correct `prisma.document` model.
+- **Impact**: Users can now successfully create leads with or without attached documents.
+
+### Files Modified
+- `crm-backend/src/modules/leads/dto/create-lead.dto.ts` - Added documents field to DTO.
+- `crm-backend/src/modules/leads/leads.service.ts` - Updated creation logic to save documents.
+
+### Testing
+- ✅ Verified lead creation via frontend form.
+- ✅ Confirmed documents structure matches frontend payload.
+
 ## [2026-02-06] - Database Connection Repair 🔧
 
 ### Fixed

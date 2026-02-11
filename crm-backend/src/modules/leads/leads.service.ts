@@ -85,13 +85,29 @@ export class LeadsService {
 
         const leadId = `LEAD-${String(nextNumber).padStart(4, '0')}`;
 
+        // Extract documents from DTO
+        const { documents, ...leadData } = createLeadDto;
+
         const lead = await this.prisma.lead.create({
             data: {
-                ...createLeadDto,
+                ...leadData,
                 leadId,
                 status: createLeadDto.status || 'New',
             },
         });
+
+        // Save documents if provided
+        if (documents && documents.length > 0) {
+            await this.prisma.document.createMany({
+                data: documents.map(doc => ({
+                    leadId: lead.id,
+                    fileName: doc.fileName,
+                    fileUrl: doc.fileUrl,
+                    fileSize: doc.fileSize,
+                    fileType: doc.fileType || 'application/octet-stream', // Default if missing
+                })),
+            });
+        }
 
         // 🎯 Timeline event
         await this.timeline.createEvent({

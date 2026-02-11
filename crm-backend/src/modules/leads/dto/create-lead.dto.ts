@@ -67,5 +67,14 @@ export class CreateLeadDto {
     assignedTo?: string;
 
     @IsOptional()
+    @IsArray()
+    documents?: Array<{
+        fileName: string;
+        fileUrl: string;
+        fileSize: number;
+        fileType: string;
+    }>;
+
+    @IsOptional()
     metadata?: any;
 }
