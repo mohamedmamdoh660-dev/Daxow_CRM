@@ -1,10 +1,31 @@
 version: '3.8'
 
 services:
+  backend:
+    build:
+      context: ./crm-backend
+      dockerfile: Dockerfile
+    container_name: daxow-crm-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - NODE_ENV=production
+    networks:
+      - daxow_crm_network
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
     container_name: daxow-crm-frontend
     restart: always
     ports:
@@ -19,3 +40,11 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - daxow_crm_network
+
+networks:
+  daxow_crm_network:
+    driver: bridge
