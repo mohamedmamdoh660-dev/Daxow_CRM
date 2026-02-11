@@ -78,6 +78,8 @@ export const RegistrationConfirmation: React.FC = () => {
                 photoUrl: uploadedDocs.find(d => d.type === 'personal_photo')?.fileUrl,
             };
 
+            console.log('🚀 Submitting Student Data:', JSON.stringify(studentData, null, 2));
+
             const response = await fetch('/api/students', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -87,10 +89,11 @@ export const RegistrationConfirmation: React.FC = () => {
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = data.error || 'Failed to create student';
+                console.error('❌ Registration Error Response:', data);
+                const errorMessage = data.error || data.message || 'Failed to create student';
 
                 // Check if it's a duplicate field error
-                if (errorMessage.includes('already registered') || errorMessage.includes('Unique constraint')) {
+                if (typeof errorMessage === 'string' && (errorMessage.includes('already registered') || errorMessage.includes('Unique constraint'))) {
                     setSubmissionStatus('error');
                     toast.error(errorMessage, {
                         duration: 5000,
@@ -98,12 +101,18 @@ export const RegistrationConfirmation: React.FC = () => {
                     });
                 } else {
                     setSubmissionStatus('error');
-                    toast.error(errorMessage);
+                    toast.error(typeof errorMessage === 'string' ? errorMessage : 'Validation failed');
                 }
                 return;
             }
 
-            setStudentId(data.student.id);
+            // Handle both response formats: { student: {...} } or direct {...}
+            const student = data.student || data;
+            const createdId = student.id || student.studentId;
+
+            console.log('✅ Student created successfully:', createdId);
+
+            setStudentId(createdId);
             setSubmissionStatus('success');
             setShowConfetti(true);
             toast.success('Student registered successfully!');
@@ -113,7 +122,7 @@ export const RegistrationConfirmation: React.FC = () => {
 
             // Auto-redirect to student detail page after 2 seconds
             setTimeout(() => {
-                router.push(`/students/${data.student.id}`);
+                router.push(`/students/${createdId}`);
             }, 2000);
         } catch (error) {
             console.error('Submission error:', error);

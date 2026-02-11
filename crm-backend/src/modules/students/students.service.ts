@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { TimelineService } from '../timeline/timeline.service';
 
 @Injectable()
 export class StudentsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private timeline: TimelineService,
+    ) { }
 
     async findAll(page: number = 1, pageSize: number = 10, search: string = '') {
         const skip = (page - 1) * pageSize;
@@ -104,12 +108,70 @@ export class StudentsService {
 
         const studentId = `STU-${String(nextNumber).padStart(4, '0')}`;
 
-        return this.prisma.student.create({
-            data: {
-                ...createStudentDto,
+        // Extract documents from DTO
+        const { documents, ...studentData } = createStudentDto;
+
+        // Sanitize data: convert empty strings to undefined for optional fields
+        const sanitizedData = Object.entries(studentData).reduce((acc, [key, value]) => {
+            // Convert empty strings to undefined
+            if (value === '' || value === null) {
+                acc[key] = undefined;
+            } else {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as any);
+
+        try {
+            console.log('📝 Creating student with sanitized data:', JSON.stringify({
+                ...sanitizedData,
                 studentId,
-            },
-        });
+                documents: documents || [],
+            }, null, 2));
+
+            const student = await this.prisma.student.create({
+                data: {
+                    ...sanitizedData,
+                    studentId,
+                    // Store documents as JSON in the documents field
+                    documents: documents || [],
+                },
+            });
+
+            console.log('✅ Student created successfully:', student.id);
+
+            // 🎯 Timeline event
+            await this.timeline.createEvent({
+                entityType: 'Student',
+                entityId: student.id,
+                eventType: 'student_created',
+                title: 'Student Created',
+                description: `New student created: ${student.fullName}`,
+                metadata: {
+                    studentId: student.studentId,
+                    email: student.email,
+                    nationality: student.nationality,
+                },
+            });
+
+            return student;
+        } catch (error) {
+            console.error('❌ Error creating student:', error);
+            console.error('❌ Error details:', {
+                name: error.name,
+                message: error.message,
+                code: error.code,
+                meta: error.meta,
+                stack: error.stack?.split('\n').slice(0, 5),
+            });
+
+            if (error.code === 'P2002') {
+                const target = error.meta?.target?.[0];
+                const cleanTarget = target ? target.replace(/([A-Z])/g, ' $1').toLowerCase() : 'field';
+                throw new ConflictException(`A student with this ${cleanTarget} already exists`);
+            }
+            throw error;
+        }
     }
 
     async update(id: string, updateStudentDto: UpdateStudentDto) {
@@ -126,8 +188,11 @@ export class StudentsService {
         // Check if student exists
         await this.findOne(id);
 
-        return this.prisma.student.delete({
+        return this.prisma.student.update({
             where: { id },
+            data: {
+                isActive: false // Soft delete
+            }
         });
     }
 }

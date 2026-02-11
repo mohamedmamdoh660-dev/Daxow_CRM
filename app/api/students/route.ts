@@ -35,10 +35,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        console.log('🚀 API Proxy received student creation request');
+
         const cookieStore = await cookies();
         const token = cookieStore.get('access_token')?.value;
 
-        const response = await fetch(`${BACKEND_URL}/api/students`, {
+        if (!token) {
+            console.error('❌ No access token found in cookies');
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        console.log('🔑 Token found, length:', token.length);
+
+        const backendUrl = `${BACKEND_URL}/api/students`;
+        console.log(`📡 Forwarding to backend: ${backendUrl}`);
+
+        const response = await fetch(backendUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -47,18 +59,33 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify(body),
         });
 
+        console.log(`📡 Backend response status: ${response.status}`);
+
         if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            return NextResponse.json(error, { status: response.status });
+            const errorText = await response.text();
+            console.error(`❌ Backend error (${response.status}):`, errorText);
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (Object.keys(errorJson).length === 0) {
+                    console.error('⚠️ Backend returned empty error object');
+                    return NextResponse.json(
+                        { error: 'Registration failed. Check backend logs for details.' },
+                        { status: response.status }
+                    );
+                }
+                return NextResponse.json(errorJson, { status: response.status });
+            } catch {
+                return NextResponse.json({ error: errorText || 'Backend error' }, { status: response.status });
+            }
         }
 
         const data = await response.json();
+        console.log('✅ Student created successfully');
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error('Error proxying to backend:', error);
-        // Special handling for duplicate error messages
+        console.error('🔥 Proxy processing error:', error?.message, error?.stack);
         return NextResponse.json(
-            { error: error?.message || 'Failed to create student in backend' },
+            { error: error?.message || 'Internal Server Error' },
             { status: 500 }
         );
     }

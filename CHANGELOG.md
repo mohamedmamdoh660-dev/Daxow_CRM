@@ -2,6 +2,31 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-11] - Student Registration Response Handling Fix 🔧
+
+### Fixed
+- **Student Registration 500 Error**: Resolved `TypeError: Cannot read properties of undefined (reading 'id')` that caused the registration to appear to fail with a 500 error.
+- **Root Cause**: Frontend `registration-confirmation.tsx` expected the API response as `{ student: { id } }`, but the backend returns the student object directly `{ id, firstName, ... }`.
+- **Fix**: Updated response handling to support both formats: `data.student.id` or `data.id`.
+- **Additional Fix**: Backend `students.service.ts` - sanitized empty strings to `undefined` for optional fields (prevents Prisma Decimal type conversion errors), and stored documents as JSON in the student record instead of creating separate Document table records.
+
+### Files Modified
+- `components/students/registration-confirmation.tsx` - Fixed response format handling
+- `crm-backend/src/modules/students/students.service.ts` - Data sanitization + documents as JSON
+
+## [2026-02-11] - Student Registration Fix 🔧
+
+### Fixed
+- **Student Creation Error**: Resolved `400 Bad Request` error during student registration.
+- **Root Cause**: `CreateStudentDto` was missing multiple fields sent by the frontend (including `documents`, `haveTc`, `transferStudent` flags, etc.), causing validation to fail.
+- **Fix**: Updated `CreateStudentDto` to include all form fields and boolean flags. Updated `StudentsService` to correctly extract and save documents and create a timeline event.
+- **Impact**: Student registration now works correctly, including document metadata saving.
+
+### Files Modified
+- `crm-backend/src/modules/students/dto/create-student.dto.ts`
+- `crm-backend/src/modules/students/students.service.ts`
+- `crm-backend/src/modules/students/students.module.ts`
+
 ## [2026-02-11] - Student Registration: Countries Dropdown Fix 🔧
 
 ### Fixed

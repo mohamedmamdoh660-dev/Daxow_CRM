@@ -7,11 +7,14 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        // Proxy to NestJS Backend
+        // Proxy to NestJS Backend (Backend expects 'username' field, not 'email')
         const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
+            body: JSON.stringify({
+                username: body.email,  // Map email to username
+                password: body.password
+            }),
         });
 
         const data = await res.json();
