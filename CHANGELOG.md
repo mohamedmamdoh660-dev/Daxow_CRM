@@ -4,6 +4,17 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-12] - Local Login Fix & Config Cleanup 🔧
+
+### Fixed
+- **Login Invalid Credentials**: Resolved login failure caused by duplicate user records with stale password hashes in the database. Updated all matching user records with correct bcrypt hashed password.
+- **Case-Insensitive Email Login**: Changed `auth.service.ts` to use `findFirst` with `mode: 'insensitive'` instead of `findUnique`, so login works regardless of email casing.
+- **Next.js Config Warnings**: Removed deprecated `eslint` and `swcMinify` keys from `next.config.js` that caused startup warnings.
+
+### Files Modified
+- `crm-backend/src/modules/auth/auth.service.ts` - Case-insensitive email matching
+- `next.config.js` - Removed deprecated config keys
+
 ## [2026-02-12] - Program Module Fixes 📋
 
 ### Fixed
