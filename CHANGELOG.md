@@ -4,6 +4,19 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-12] - Production Login Fix 🔒
+
+### Fixed
+- **Browser Login on Production**: Resolved login working locally but failing on production VPS.
+- **Root Cause 1 - Nginx Routing**: Nginx was proxying `/api` requests directly to NestJS backend, bypassing Next.js API routes that map `email` → `username`. Fixed by routing all traffic through Next.js.
+- **Root Cause 2 - Cookie Secure Flag**: `access_token` cookie had `Secure` flag enabled in production (HTTP-only server), preventing browser from storing the cookie. Disabled `Secure` flag for HTTP deployment.
+- **Admin User**: Corrected admin email from `Mohmed@daxow.com` to `Mohamed@daxow.com`.
+
+### Files Modified
+- `app/api/auth/login/route.ts` - Disabled `Secure` cookie flag for HTTP
+- `nginx.conf` - Removed separate `/api` proxy block, all traffic routes through Next.js
+- `crm-backend/create-admin.js` - Admin user creation script with correct email
+
 ## [2026-02-11] - Production Deployment 🚀
 
 ### Added
