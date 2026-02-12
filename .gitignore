@@ -13,3 +13,4 @@ coverage
 # Local file uploads (fallback when Supabase is not configured)
 /public/uploads/*
 !/public/uploads/.gitkeep
+cookies.txt

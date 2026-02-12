@@ -1,6 +1,16 @@
 # CHANGELOG
 
+# CHANGELOG
+
 All notable changes to the Admission CRM project will be documented in this file.
+
+## [2026-02-11] - Production Deployment 🚀
+
+### Added
+- **VPS Deployment**:Deployed the full application (Frontend + Backend) to Hostinger VPS (`76.13.239.71`).
+- **Nginx Configuration**: Configured Nginx as a reverse proxy for both Frontend (port 3000) and Backend (port 3001/api).
+- **PM2 Process Management**: Set up PM2 to manage Node.js processes with auto-restart on boot.
+- **Environment Setup**: Configured production environment variables on the server.
 
 ## [2026-02-11] - Student Registration Response Handling Fix 🔧
 
