@@ -23,6 +23,35 @@ interface RichTextEditorProps {
     className?: string;
 }
 
+/**
+ * 🔐 Security: Sanitize HTML to prevent XSS attacks
+ * Removes script tags, event handlers, and dangerous elements
+ */
+function sanitizeHTML(html: string): string {
+    if (!html) return '';
+
+    // Remove script tags and their content
+    let clean = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+    // Remove event handlers (onclick, onerror, onload, etc.)
+    clean = clean.replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+
+    // Remove javascript: and data: URLs
+    clean = clean.replace(/\bhref\s*=\s*["']?\s*javascript:/gi, 'href="');
+    clean = clean.replace(/\bsrc\s*=\s*["']?\s*javascript:/gi, 'src="');
+    clean = clean.replace(/\bsrc\s*=\s*["']?\s*data:text\/html/gi, 'src="');
+
+    // Remove iframe, object, embed, form tags
+    clean = clean.replace(/<\s*(iframe|object|embed|form|meta|link)\b[^>]*>/gi, '');
+    clean = clean.replace(/<\/\s*(iframe|object|embed|form|meta|link)\s*>/gi, '');
+
+    // Remove style expressions (IE-specific XSS vectors)
+    clean = clean.replace(/expression\s*\(/gi, '');
+    clean = clean.replace(/url\s*\(\s*["']?\s*javascript:/gi, 'url(');
+
+    return clean;
+}
+
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
@@ -42,7 +71,12 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     const insertLink = () => {
         const url = prompt('Enter URL:');
         if (url) {
-            executeCommand('createLink', url);
+            // 🔐 Security: Only allow http/https URLs
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                executeCommand('createLink', url);
+            } else {
+                alert('Only http:// and https:// URLs are allowed.');
+            }
         }
     };
 
@@ -104,7 +138,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
                 onInput={updateContent}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                dangerouslySetInnerHTML={{ __html: value || '' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(value || '') }}
                 data-placeholder={placeholder}
             />
 

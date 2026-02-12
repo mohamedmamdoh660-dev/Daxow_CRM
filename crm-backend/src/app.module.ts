@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -29,6 +30,24 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // 🔐 Security: Rate Limiting - prevents brute-force attacks
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,   // 1 second window
+        limit: 3,    // max 3 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 10000,  // 10 second window
+        limit: 20,   // max 20 requests per 10 seconds
+      },
+      {
+        name: 'long',
+        ttl: 60000,  // 1 minute window
+        limit: 100,  // max 100 requests per minute
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     StudentsModule,
@@ -54,6 +73,11 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    // 🔐 Security: Apply rate limiting globally
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

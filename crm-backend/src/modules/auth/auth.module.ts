@@ -23,7 +23,7 @@ import { DatabaseModule } from '../../database/database.module';
 
                 return {
                     secret: jwtSecret,
-                    signOptions: { expiresIn: '7d' }, // Extended for testing convenience
+                    signOptions: { expiresIn: '24h' }, // 🔐 Security: Reduced from 7d to 24h
                 };
             },
             inject: [ConfigService],

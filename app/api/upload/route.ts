@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToSupabase, generateSupabasePath } from '@/lib/supabase-storage';
 import { uploadToLocal } from '@/lib/local-storage';
+import { cookies } from 'next/headers';
 
 const STORAGE_BUCKET = 'crm-uploads';
 
 export async function POST(request: NextRequest) {
     try {
+        // 🔐 Security: Require authentication for uploads
+        const cookieStore = await cookies();
+        const token = cookieStore.get('access_token')?.value;
+
+        if (!token) {
+            return NextResponse.json(
+                { error: 'Unauthorized - Login required to upload files' },
+                { status: 401 }
+            );
+        }
+
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const documentType = formData.get('documentType') as string;
@@ -21,7 +33,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate file type
+        // 🔐 Security: Validate file type (whitelist approach)
         const allowedTypes = [
             'image/jpeg',
             'image/jpg',
@@ -40,8 +52,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate file size (10MB max)
-        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        // 🔐 Security: Validate file size (10MB max)
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
             return NextResponse.json(
                 { error: 'File size exceeds 10MB limit' },
@@ -49,15 +61,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // 🔐 Security: Sanitize file name to prevent path traversal
+        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
         // Generate folder path
-        // 1. If explicit folder provided, use it (e.g. leads)
-        // 2. If studentId provided, use students/{id}
-        // 3. Default to 'temp'
         let folder = (formData.get('folder') as string) || '';
+
+        // 🔐 Security: Prevent path traversal in folder name
+        folder = folder.replace(/\.\./g, '').replace(/^\/+/, '');
 
         if (!folder) {
             if (studentId) {
-                folder = `students/${studentId}`;
+                folder = `students/${studentId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
             } else {
                 folder = 'temp';
             }
@@ -68,23 +83,19 @@ export async function POST(request: NextRequest) {
         let storageType: 'supabase' | 'local' = 'local';
 
         try {
-            // Try uploading to Supabase
-            const storagePath = generateSupabasePath(folder, file.name);
+            const storagePath = generateSupabasePath(folder, sanitizedFileName);
             result = await uploadToSupabase(file, targetBucket, storagePath);
 
             if (result) {
                 storageType = 'supabase';
-                console.log(`✅ File uploaded to Supabase Storage (${targetBucket}/${folder})`);
             }
         } catch (error: any) {
-            console.error('❌ Supabase upload failed:', error);
-            // Allow fallback to local storage
+            // Fallback to local storage silently
         }
 
         // Fallback to local storage if Supabase failed
         if (!result) {
             result = await uploadToLocal(file, folder);
-            console.log('✅ File uploaded to local storage');
         }
 
         return NextResponse.json({
@@ -92,14 +103,14 @@ export async function POST(request: NextRequest) {
             fileUrl: result.url,
             storagePath: result.path,
             storageType,
-            fileName: file.name,
+            fileName: sanitizedFileName,
             fileSize: file.size,
             fileType: file.type,
         });
     } catch (error: any) {
-        console.error('Upload error:', error);
+        console.error('Upload error:', error?.message);
         return NextResponse.json(
-            { error: error.message || 'Failed to upload file' },
+            { error: 'Failed to upload file' },
             { status: 500 }
         );
     }
