@@ -98,8 +98,9 @@ export default function ProgramsPage() {
                 onSearchChange={setSearch}
                 onFilterChange={(newFilters) => {
                     setFilters(newFilters);
-                    setMeta(prev => ({ ...prev, page: 1 })); // Reset to page 1 on filter
+                    setMeta(prev => ({ ...prev, page: 1 }));
                 }}
+                onRefresh={fetchPrograms}
             />
         </div>
     );

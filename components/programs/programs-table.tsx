@@ -10,8 +10,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Edit2, Trash2, Eye } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -22,6 +21,17 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface ProgramsTableProps {
     data: any[];
@@ -33,6 +43,7 @@ interface ProgramsTableProps {
     loading: boolean;
     faculties: any[];
     degrees: any[];
+    onRefresh?: () => void;
 }
 
 export function ProgramsTable({
@@ -45,8 +56,11 @@ export function ProgramsTable({
     loading,
     faculties,
     degrees,
+    onRefresh,
 }: ProgramsTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
@@ -55,6 +69,25 @@ export function ProgramsTable({
 
     const handleFilterChange = (key: string, value: string) => {
         onFilterChange({ ...filters, [key]: value === 'all' ? undefined : value });
+    };
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+        setDeleting(true);
+        try {
+            const res = await fetch(`/api/programs/${deleteId}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Failed to delete');
+            }
+            toast.success('Program deleted successfully');
+            onRefresh?.();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to delete program');
+        } finally {
+            setDeleting(false);
+            setDeleteId(null);
+        }
     };
 
     if (loading) {
@@ -111,6 +144,7 @@ export function ProgramsTable({
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Faculty</TableHead>
+                            <TableHead>Specialty</TableHead>
                             <TableHead>Degree</TableHead>
                             <TableHead>Official Tuition</TableHead>
                             <TableHead>Study Years</TableHead>
@@ -121,7 +155,7 @@ export function ProgramsTable({
                     <TableBody>
                         {data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                                     No programs found
                                 </TableCell>
                             </TableRow>
@@ -137,14 +171,15 @@ export function ProgramsTable({
                                         )}
                                     </TableCell>
                                     <TableCell>{program.faculty?.name || '-'}</TableCell>
+                                    <TableCell>{program.specialty?.name || program.specialty?.title?.name || '-'}</TableCell>
                                     <TableCell>{program.degree?.name || '-'}</TableCell>
                                     <TableCell>
                                         {program.officialTuition ? (
                                             <>
-                                                {program.officialTuition} {program.tuitionCurrency}
+                                                {Number(program.officialTuition).toLocaleString()} {program.tuitionCurrency || 'USD'}
                                                 {program.discountedTuition && (
-                                                    <div className="text-xs text-muted-foreground line-through">
-                                                        {program.discountedTuition}
+                                                    <div className="text-xs text-green-600 font-medium">
+                                                        → {Number(program.discountedTuition).toLocaleString()} {program.tuitionCurrency || 'USD'}
                                                     </div>
                                                 )}
                                             </>
@@ -166,12 +201,21 @@ export function ProgramsTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
+                                        <div className="flex justify-end gap-1">
                                             <Link href={`/programs/${program.id}`}>
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="ghost" size="icon" title="Edit">
                                                     <Edit2 className="h-4 w-4" />
                                                 </Button>
                                             </Link>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                title="Delete"
+                                                className="text-destructive hover:text-destructive"
+                                                onClick={() => setDeleteId(program.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -205,6 +249,29 @@ export function ProgramsTable({
                     </Button>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Program</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this program? This action cannot be undone.
+                            Any linked applications will also be affected.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {deleting ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

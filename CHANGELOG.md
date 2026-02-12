@@ -4,6 +4,21 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-12] - Program Module Fixes 📋
+
+### Fixed
+- **API Auth Missing**: All program API proxy routes now include Authorization headers
+- **Wrong Default Port**: Changed fallback port from 4000 to 3001 in API proxy routes
+- **Edit Page Auth**: Converted SSR edit page to CSR with proper cookie-based auth flow
+- **Specialty Name Display**: Fixed specialty selector to handle both `name` and `title.name` formats
+- **API Connectivity**: Corrected default port from 4000 to 3001 in all 12 API proxy routes (countries, degrees, faculties, etc.) ensuring stable data fetching for dropdowns like Specialty
+
+### Added
+- **Delete Program**: Delete button with confirmation dialog in programs table
+- **Currency Selector**: Dropdown with 12 currencies (USD, EUR, GBP, TRY, SAR, etc.)
+- **Specialty Column**: Added specialty column to programs table
+- **Tuition Formatting**: Numbers now formatted with locale separators
+
 ## [2026-02-12] - Security Hardening 🔐
 
 ### Security

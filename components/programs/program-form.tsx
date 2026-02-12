@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -24,8 +23,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
+
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY', 'SAR', 'AED', 'EGP', 'KWD', 'QAR', 'BHD', 'OMR', 'JOD'];
 
 const formSchema = z.object({
     name: z.string().min(1, 'Program name is required'),
@@ -72,8 +72,8 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
             countryId: initialData?.countryId || undefined,
             cityId: initialData?.cityId || undefined,
             studyYears: initialData?.studyYears || '',
-            officialTuition: initialData?.officialTuition || '',
-            discountedTuition: initialData?.discountedTuition || '',
+            officialTuition: initialData?.officialTuition?.toString() || '',
+            discountedTuition: initialData?.discountedTuition?.toString() || '',
             tuitionCurrency: initialData?.tuitionCurrency || 'USD',
             isActive: initialData?.isActive ?? false,
             activeApplications: initialData?.activeApplications ?? false,
@@ -185,7 +185,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
 
             toast.success(initialData ? 'Program updated' : 'Program created');
             router.push('/programs');
-            router.refresh(); // Refresh server components
+            router.refresh();
         } catch (error: any) {
             toast.error(error.message);
         } finally {
@@ -244,7 +244,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                 name="specialtyId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Specialty</FormLabel>
+                                        <FormLabel>Specialty *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={!watchedFacultyId}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -253,7 +253,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                             </FormControl>
                                             <SelectContent>
                                                 {specialties.map((s) => (
-                                                    <SelectItem key={s.id} value={s.id}>{s.title?.name || 'Unknown'}</SelectItem>
+                                                    <SelectItem key={s.id} value={s.id}>{s.name || s.title?.name || 'Unknown'}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -269,7 +269,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                 name="degreeId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Degree Level</FormLabel>
+                                        <FormLabel>Degree Level *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -292,7 +292,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                 name="languageId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Language</FormLabel>
+                                        <FormLabel>Language *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -378,7 +378,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <FormField
                                 control={form.control}
                                 name="officialTuition"
@@ -386,7 +386,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                     <FormItem>
                                         <FormLabel>Official Tuition</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. 5000" {...field} />
+                                            <Input type="number" placeholder="e.g. 5000" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -400,14 +400,36 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                     <FormItem>
                                         <FormLabel>Discounted Tuition</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. 4500" {...field} />
+                                            <Input type="number" placeholder="e.g. 4500" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </div>
 
+                            <FormField
+                                control={form.control}
+                                name="tuitionCurrency"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Currency</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value || 'USD'} value={field.value || 'USD'}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Currency" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {CURRENCIES.map((c) => (
+                                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
@@ -434,7 +456,7 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                 render={({ field }) => (
                                     <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                         <div className="space-y-0.5">
-                                            <FormLabel className="text-base text-xs">Accepting Applicants</FormLabel>
+                                            <FormLabel className="text-base">Accepting Applicants</FormLabel>
                                         </div>
                                         <FormControl>
                                             <Switch
@@ -446,9 +468,6 @@ export function ProgramForm({ initialData }: ProgramFormProps) {
                                 )}
                             />
                         </div>
-
-
-
                     </div>
                 </div>
 

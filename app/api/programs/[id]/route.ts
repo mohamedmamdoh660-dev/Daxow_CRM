@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 export async function GET(
     request: NextRequest,
@@ -8,9 +9,13 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
+        const cookieStore = await cookies();
+        const token = cookieStore.get('access_token')?.value;
+
         const res = await fetch(`${BACKEND_URL}/api/programs/${id}`, {
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
             },
             cache: 'no-store',
         });
@@ -39,10 +44,18 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
+        const cookieStore = await cookies();
+        const token = cookieStore.get('access_token')?.value;
+
+        if (!token) {
+            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        }
+
         const res = await fetch(`${BACKEND_URL}/api/programs/${id}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(body),
         });
@@ -68,8 +81,18 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
+        const cookieStore = await cookies();
+        const token = cookieStore.get('access_token')?.value;
+
+        if (!token) {
+            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        }
+
         const res = await fetch(`${BACKEND_URL}/api/programs/${id}`, {
             method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
         });
 
         if (!res.ok) {
