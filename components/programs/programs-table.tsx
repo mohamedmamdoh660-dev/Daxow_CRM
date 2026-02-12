@@ -202,11 +202,11 @@ export function ProgramsTable({
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Link href={`/programs/${program.id}`}>
-                                                <Button variant="ghost" size="icon" title="Edit">
+                                            <Button variant="ghost" size="icon" title="Edit" asChild>
+                                                <Link href={`/programs/${program.id}`}>
                                                     <Edit2 className="h-4 w-4" />
-                                                </Button>
-                                            </Link>
+                                                </Link>
+                                            </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"

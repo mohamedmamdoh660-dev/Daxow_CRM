@@ -79,12 +79,12 @@ export default function ProgramsPage() {
                     <h1 className="text-3xl font-bold">Programs</h1>
                     <p className="text-muted-foreground">Manage academic program catalog</p>
                 </div>
-                <Link href="/programs/new">
-                    <Button>
+                <Button asChild>
+                    <Link href="/programs/new">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Program
-                    </Button>
-                </Link>
+                    </Link>
+                </Button>
             </div>
 
             <ProgramsTable
