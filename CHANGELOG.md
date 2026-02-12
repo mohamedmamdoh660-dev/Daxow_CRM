@@ -4,6 +4,37 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-02-12] - Security Hardening 🔐
+
+### Security
+- **Port 3001 Blocked**: Backend port no longer accessible externally via UFW firewall
+- **Swagger Disabled in Production**: API documentation only available in development
+- **Helmet Security Headers**: Added X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- **Rate Limiting**: 3-tier rate limiting globally (3/sec, 20/10sec, 100/min) + strict 5/60s on login
+- **JWT Middleware Validation**: Middleware now validates JWT structure and expiration, not just cookie existence
+- **Upload Authentication**: Upload endpoint now requires valid auth token
+- **XSS Prevention**: HTML sanitization in rich-text-editor (removes scripts, event handlers, dangerous elements)
+- **Path Traversal Prevention**: Upload file names and folder paths sanitized
+- **RBAC System**: Created RolesGuard and @Roles() decorator for role-based access control
+- **JWT Expiry Reduced**: From 7 days to 24 hours
+- **Debug Logging Removed**: Sensitive info (token lengths, backend URLs) no longer logged
+- **Nginx Hardened**: Added 5 security headers, disabled server version disclosure, 10MB body limit
+
+### Files Modified
+- `crm-backend/src/main.ts` - Helmet, Swagger conditional
+- `crm-backend/src/app.module.ts` - ThrottlerModule, ThrottlerGuard
+- `crm-backend/src/modules/auth/auth.controller.ts` - Login rate limit
+- `crm-backend/src/modules/auth/auth.module.ts` - JWT 24h expiry
+- `middleware.ts` - JWT validation
+- `app/api/upload/route.ts` - Auth + path traversal fix
+- `app/api/students/route.ts` - Debug logs removed
+- `components/ui/rich-text-editor.tsx` - XSS sanitization
+- `nginx.conf` - Security headers
+
+### New Files
+- `crm-backend/src/common/guards/roles.guard.ts` - RBAC guard
+- `crm-backend/src/common/decorators/roles.decorator.ts` - Roles decorator
+
 ## [2026-02-12] - Production Login Fix 🔒
 
 ### Fixed
