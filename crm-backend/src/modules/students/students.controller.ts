@@ -48,10 +48,7 @@ export class StudentsController {
         @Query('page') page: string,
         @Query('pageSize') pageSize: string,
         @Query('search') search: string,
-        @Query('status') status: string,
-        @Query('isActive') isActive: string,
-        @Query('agentId') agentId: string,
-        @Query('nationality') nationality: string,
+        @Query() allQuery: Record<string, any>,
         @Request() req: any,
     ) {
         const userId = req.user?.id || req.user?.sub;
@@ -62,14 +59,10 @@ export class StudentsController {
             pageSize ? Number(pageSize) : 10,
             search,
             ownerFilter,
-            {
-                status: status || undefined,
-                isActive: isActive !== undefined && isActive !== '' ? isActive === 'true' : undefined,
-                agentId: agentId || undefined,
-                nationality: nationality || undefined,
-            },
+            allQuery,
         );
     }
+
 
 
     @Get(':id')

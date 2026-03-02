@@ -3,6 +3,13 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { Prisma } from '@prisma/client';
+import { parseSmartFilters } from '../../common/helpers/smart-filters.helper';
+
+/** Fields allowed in smart filter queries for applications */
+const APPLICATION_FILTERABLE_FIELDS = [
+    'applicationName', 'stage', 'programId', 'agentId', 'agencyId',
+    'studentId', 'academicYearId', 'semesterId', 'createdAt',
+];
 
 @Injectable()
 export class ApplicationsService {
@@ -77,6 +84,7 @@ export class ApplicationsService {
         agencyId?: string;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
+        rawQuery?: Record<string, any>;  // 🔍 smart filter raw query
         assignedToFilter?: string;  // 🔒 view_own: filter by ownerId
     }) {
         const page = query?.page || 1;
@@ -95,13 +103,11 @@ export class ApplicationsService {
             ];
         }
 
-        if (query?.stage) where.stage = query.stage;
-        if (query?.studentId) where.studentId = query.studentId;
-        if (query?.programId) where.programId = query.programId;
-        if (query?.academicYearId) where.academicYearId = query.academicYearId;
-        if (query?.semesterId) where.semesterId = query.semesterId;
-        if (query?.agentId) where.agentId = query.agentId;
-        if (query?.agencyId) where.agencyId = query.agencyId;
+        // 🔍 Smart filter: parse field__operator=value params
+        if (query?.rawQuery) {
+            const smartConditions = parseSmartFilters(query.rawQuery, APPLICATION_FILTERABLE_FIELDS);
+            Object.assign(where, smartConditions);
+        }
 
         // 🔒 View Own: restrict to applications owned by this user
         if (query?.assignedToFilter) {

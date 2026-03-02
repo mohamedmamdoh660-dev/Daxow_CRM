@@ -59,15 +59,9 @@ export class ApplicationsController {
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('search') search?: string,
-        @Query('stage') stage?: string,
-        @Query('studentId') studentId?: string,
-        @Query('programId') programId?: string,
-        @Query('academicYearId') academicYearId?: string,
-        @Query('semesterId') semesterId?: string,
-        @Query('agentId') agentId?: string,
-        @Query('agencyId') agencyId?: string,
         @Query('sortBy') sortBy?: string,
         @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+        @Query() allQuery?: Record<string, any>,
         @Request() req?: any,
     ) {
         const userId = req?.user?.id || req?.user?.sub;
@@ -79,16 +73,10 @@ export class ApplicationsController {
             page: page ? parseInt(page, 10) : undefined,
             limit: limit ? parseInt(limit, 10) : undefined,
             search,
-            stage,
-            studentId,
-            programId,
-            academicYearId,
-            semesterId,
-            agentId,
-            agencyId,
             sortBy,
             sortOrder,
             assignedToFilter,
+            rawQuery: allQuery,
         });
     }
 

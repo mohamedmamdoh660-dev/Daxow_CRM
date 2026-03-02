@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,13 @@ import Link from 'next/link';
 import { Plus, Search, FileText, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import {
-    FilterPanel,
-    FilterToggleButton,
-    ActiveFilterChips,
-    type FilterField,
-    type SystemFilter,
-} from '@/components/shared/filter-panel';
+    SmartFilterPanel,
+    SmartFilterToggleButton,
+    SmartActiveFilterChips,
+    buildSmartFilterParams,
+    type SmartFilterField,
+    type AppliedFilter,
+} from '@/components/shared/smart-filter-panel';
 
 const STAGES = [
     'Draft', 'Submitted', 'Under Review', 'Missing Docs', 'Conditional Acceptance',
@@ -34,18 +35,6 @@ const STAGE_COLORS: Record<string, string> = {
     'Cancelled': 'bg-gray-200 text-gray-500',
 };
 
-const APP_SYSTEM_FILTERS: SystemFilter[] = [
-    { id: 'my-apps', label: 'My Applications', description: 'Applications assigned to me', filterKey: 'myApps', filterValue: 'true' },
-];
-
-const APP_FILTER_FIELDS: FilterField[] = [
-    {
-        key: 'stage',
-        label: 'Stage',
-        options: STAGES.map((s) => ({ id: s, label: s, value: s })),
-    },
-];
-
 export default function ApplicationsPage() {
     const [data, setData] = useState<any[]>([]);
     const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, totalPages: 0 });
@@ -54,9 +43,76 @@ export default function ApplicationsPage() {
     const [stats, setStats] = useState<{ total: number; byStage: Record<string, number> } | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-    const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+    const [appliedFilters, setAppliedFilters] = useState<AppliedFilter[]>([]);
+
+    // Dynamic option lists for select fields
+    const [agents, setAgents] = useState<any[]>([]);
+    const [programs, setPrograms] = useState<any[]>([]);
 
     const debouncedSearch = useDebounce(search, 500);
+
+    // Fetch lookup data for filter dropdowns
+    useEffect(() => {
+        fetch('/api/agents?pageSize=200')
+            .then((r) => r.json())
+            .then((res) => setAgents(Array.isArray(res) ? res : (res.data || [])))
+            .catch(() => { });
+
+        fetch('/api/programs?pageSize=500')
+            .then((r) => r.json())
+            .then((res) => setPrograms(Array.isArray(res) ? res : (res.data || [])))
+            .catch(() => { });
+    }, []);
+
+    // ── Smart filter fields (all table columns) ──────────────────────────────
+    const smartFields: SmartFilterField[] = [
+        {
+            key: 'applicationName',
+            label: 'App Name',
+            type: 'text',
+        },
+        {
+            key: 'studentName',
+            label: 'Student Name',
+            type: 'text',
+        },
+        {
+            key: 'studentEmail',
+            label: 'Student Email',
+            type: 'text',
+        },
+        {
+            key: 'programId',
+            label: 'Program',
+            type: 'select',
+            options: programs.map((p) => ({
+                id: p.id,
+                label: p.name,
+                value: p.id,
+            })),
+        },
+        {
+            key: 'agentId',
+            label: 'Agent',
+            type: 'select',
+            options: agents.map((a) => ({
+                id: a.id,
+                label: a.companyName || a.contactPerson || a.email,
+                value: a.id,
+            })),
+        },
+        {
+            key: 'stage',
+            label: 'Stage',
+            type: 'select',
+            options: STAGES.map((s) => ({ id: s, label: s, value: s })),
+        },
+        {
+            key: 'createdAt',
+            label: 'Created Date',
+            type: 'date',
+        },
+    ];
 
     const fetchApplications = useCallback(async () => {
         setLoading(true);
@@ -65,12 +121,7 @@ export default function ApplicationsPage() {
             params.append('page', meta.page.toString());
             params.append('limit', meta.limit.toString());
             if (debouncedSearch) params.append('search', debouncedSearch);
-
-            // Add active filters
-            for (const [key, values] of Object.entries(activeFilters)) {
-                if (values.length === 1) params.set(key, values[0]);
-                else values.forEach((v) => params.append(key, v));
-            }
+            buildSmartFilterParams(params, appliedFilters);
 
             const res = await fetch(`/api/applications?${params.toString()}`);
             if (res.ok) {
@@ -83,45 +134,31 @@ export default function ApplicationsPage() {
         } finally {
             setLoading(false);
         }
-    }, [meta.page, meta.limit, debouncedSearch, activeFilters]);
+    }, [meta.page, meta.limit, debouncedSearch, appliedFilters]);
 
     const fetchStats = useCallback(async () => {
         try {
             const res = await fetch('/api/applications/stats');
             if (res.ok) {
                 const result = await res.json();
-                setStats({
-                    total: result.total || 0,
-                    byStage: result.byStage || {},
-                });
+                setStats({ total: result.total || 0, byStage: result.byStage || {} });
             }
         } catch (error) {
             console.error('Error fetching stats:', error);
         }
     }, []);
 
-    useEffect(() => {
-        fetchApplications();
-    }, [fetchApplications]);
+    useEffect(() => { fetchApplications(); }, [fetchApplications]);
+    useEffect(() => { fetchStats(); }, [fetchStats]);
 
-    useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
-
-    // Reset to page 1 when filters change
+    // Reset to page 1 when filters/search change
     useEffect(() => {
         setMeta(prev => ({ ...prev, page: 1 }));
-    }, [debouncedSearch, activeFilters]);
+    }, [debouncedSearch, appliedFilters]);
 
-    const totalActiveFilters = Object.values(activeFilters).reduce((sum, v) => sum + v.length, 0);
-
-    const handleRemoveFilter = (fieldKey: string, value: string) => {
-        const current = activeFilters[fieldKey] || [];
-        const updated = current.filter((v) => v !== value);
-        const newFilters = { ...activeFilters };
-        if (updated.length === 0) delete newFilters[fieldKey];
-        else newFilters[fieldKey] = updated;
-        setActiveFilters(newFilters);
+    const handleFiltersChange = (filters: AppliedFilter[]) => {
+        setAppliedFilters(filters);
+        setMeta(prev => ({ ...prev, page: 1 }));
     };
 
     const handleDelete = async (id: string) => {
@@ -129,10 +166,7 @@ export default function ApplicationsPage() {
         setDeleteId(id);
         try {
             const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                fetchApplications();
-                fetchStats();
-            }
+            if (res.ok) { fetchApplications(); fetchStats(); }
         } catch (error) {
             console.error('Delete error:', error);
         } finally {
@@ -176,15 +210,16 @@ export default function ApplicationsPage() {
                 </div>
             )}
 
-            {/* Main layout with optional filter sidebar */}
+            {/* Main layout */}
             <div className="flex gap-4 items-start">
+
+                {/* Filter Sidebar */}
                 {filterPanelOpen && (
-                    <div className="w-64 shrink-0 rounded-lg border border-border overflow-hidden shadow-sm">
-                        <FilterPanel
-                            fields={APP_FILTER_FIELDS}
-                            systemFilters={APP_SYSTEM_FILTERS}
-                            activeFilters={activeFilters}
-                            onFiltersChange={(f) => { setActiveFilters(f); setMeta(p => ({ ...p, page: 1 })); }}
+                    <div className="w-[340px] shrink-0 rounded-lg border border-border overflow-hidden shadow-sm">
+                        <SmartFilterPanel
+                            fields={smartFields}
+                            appliedFilters={appliedFilters}
+                            onFiltersChange={handleFiltersChange}
                             className="min-h-[500px]"
                         />
                     </div>
@@ -194,7 +229,7 @@ export default function ApplicationsPage() {
                 <div className="flex-1 min-w-0">
                     <Card>
                         <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-3">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
@@ -204,18 +239,18 @@ export default function ApplicationsPage() {
                                         className="pl-10 w-72 h-9"
                                     />
                                 </div>
-                                <FilterToggleButton
-                                    activeCount={totalActiveFilters}
+                                <SmartFilterToggleButton
+                                    activeCount={appliedFilters.length}
                                     onClick={() => setFilterPanelOpen((o) => !o)}
                                     isOpen={filterPanelOpen}
                                 />
                             </div>
-                            <ActiveFilterChips
-                                activeFilters={activeFilters}
-                                fields={APP_FILTER_FIELDS}
-                                systemFilters={APP_SYSTEM_FILTERS}
-                                onRemove={handleRemoveFilter}
-                                onClearAll={() => { setActiveFilters({}); setMeta(p => ({ ...p, page: 1 })); }}
+                            <SmartActiveFilterChips
+                                appliedFilters={appliedFilters}
+                                onRemove={(id) =>
+                                    handleFiltersChange(appliedFilters.filter((f) => f.id !== id))
+                                }
+                                onClearAll={() => handleFiltersChange([])}
                             />
                         </CardHeader>
                         <CardContent className="p-0">

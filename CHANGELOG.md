@@ -2,6 +2,27 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-03] - Smart Dynamic Filter System 🔍⚡
+
+### Added
+- **`components/shared/smart-filter-panel.tsx`**: New Zoho-style dynamic filter panel with:
+  - Type-aware operators for every column:
+    - **Text** (Name, Email, Student ID): `contains` · `does not contain` · `equals` · `starts with` · `ends with`
+    - **Select/Dropdown** (Status, Program, Agent, Stage, Country): `is` · `is not` + full dropdown of options
+    - **Date** (Created At): `is before` · `is after` · `is between` · `this week` · `this month` · `last 7/30 days`
+    - **Number** (Fees): `=` · `≠` · `>` · `≥` · `<` · `≤` · `between`
+    - **Boolean** (Active): `is true` · `is false`
+  - "+ Add Filter" row-based UI — multiple rows, each independent
+  - Active filter chips above the table with × to remove individual filters
+  - Filter badge count on the Filter button
+- **`crm-backend/src/common/helpers/smart-filters.helper.ts`**: Backend parser for `field__operator=value` query params → Prisma where conditions
+
+### Modified
+- **`app/(dashboard)/students/page.tsx`**: Updated to use SmartFilterPanel with all 9 columns (Student ID, Name, Email, Program, Country, Status, Agent, Fees, Created At)
+- **`app/(dashboard)/applications/page.tsx`**: Updated to use SmartFilterPanel with all 7 columns (App Name, Student Name, Email, Program, Agent, Stage, Date)
+- **`students.controller.ts`** + **`students.service.ts`**: Now parse smart filter params and apply dynamically to Prisma where clause
+- **`applications.controller.ts`** + **`applications.service.ts`**: Same smart filter support
+
 ## [2026-03-03] - Zoho-Style Filter Panel 🔍
 
 ### Added — Shared Component

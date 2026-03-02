@@ -3,6 +3,15 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { TimelineService } from '../timeline/timeline.service';
+import { parseSmartFilters } from '../../common/helpers/smart-filters.helper';
+
+/** Fields allowed in smart filter queries for students */
+const STUDENT_FILTERABLE_FIELDS = [
+    'studentId', 'name', 'email', 'programId', 'nationality',
+    'status', 'agentId', 'fees', 'createdAt', 'isActive',
+    // Legacy simple params kept for backward compatibility
+    'isActive',
+];
 
 @Injectable()
 export class StudentsService {
@@ -32,12 +41,7 @@ export class StudentsService {
         pageSize: number = 10,
         search: string = '',
         ownerFilter?: string,
-        filters?: {
-            status?: string;
-            isActive?: boolean;
-            agentId?: string;
-            nationality?: string;
-        },
+        rawQuery?: Record<string, any>,
     ) {
         const skip = (page - 1) * pageSize;
         const take = pageSize;
@@ -60,11 +64,11 @@ export class StudentsService {
             ];
         }
 
-        // Apply additional filters
-        if (filters?.status) where.status = filters.status;
-        if (filters?.isActive !== undefined) where.isActive = filters.isActive;
-        if (filters?.agentId) where.agentId = filters.agentId;
-        if (filters?.nationality) where.nationality = filters.nationality;
+        // 🔍 Smart filter: parse field__operator=value params
+        if (rawQuery) {
+            const smartConditions = parseSmartFilters(rawQuery, STUDENT_FILTERABLE_FIELDS);
+            Object.assign(where, smartConditions);
+        }
 
         const [students, total] = await Promise.all([
             this.prisma.student.findMany({
