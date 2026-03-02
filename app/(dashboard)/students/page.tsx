@@ -74,9 +74,13 @@ export default function StudentsPage() {
 
     // Fetch agents for the filter
     useEffect(() => {
-        fetch('/api/agents')
+        fetch('/api/agents?pageSize=200')
             .then((r) => r.json())
-            .then((data) => setAgents(data.agents || data || []))
+            .then((res) => {
+                // Backend returns { data: [...], total, page, pageSize, totalPages }
+                const list = Array.isArray(res) ? res : (res.data || res.agents || []);
+                setAgents(list);
+            })
             .catch(() => { });
     }, []);
 
