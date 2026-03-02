@@ -44,6 +44,8 @@ interface ProgramsTableProps {
     faculties: any[];
     degrees: any[];
     onRefresh?: () => void;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export function ProgramsTable({
@@ -57,6 +59,8 @@ export function ProgramsTable({
     faculties,
     degrees,
     onRefresh,
+    canEdit = true,
+    canDelete = true,
 }: ProgramsTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -149,7 +153,7 @@ export function ProgramsTable({
                             <TableHead>Official Tuition</TableHead>
                             <TableHead>Study Years</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            {(canEdit || canDelete) && <TableHead className="text-right">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -200,24 +204,30 @@ export function ProgramsTable({
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="icon" title="Edit" asChild>
-                                                <Link href={`/programs/${program.id}`}>
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                title="Delete"
-                                                className="text-destructive hover:text-destructive"
-                                                onClick={() => setDeleteId(program.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
+                                    {(canEdit || canDelete) && (
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                {canEdit && (
+                                                    <Button variant="ghost" size="icon" title="Edit" asChild>
+                                                        <Link href={`/programs/${program.id}`}>
+                                                            <Edit2 className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                                {canDelete && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        title="Delete"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => setDeleteId(program.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))
                         )}

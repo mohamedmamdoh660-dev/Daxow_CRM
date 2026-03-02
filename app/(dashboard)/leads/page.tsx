@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { LeadsTable } from '@/components/leads/leads-table';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function LeadsPage() {
+    const { canAdd, canEdit, canDelete } = usePermissions('Leads');
     const [leads, setLeads] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalCount, setTotalCount] = useState(0);
@@ -72,12 +74,14 @@ export default function LeadsPage() {
                     <h1 className="text-3xl font-bold">Leads</h1>
                     <p className="text-muted-foreground">Manage potential students and agents</p>
                 </div>
-                <Link href="/leads/new">
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Lead
-                    </Button>
-                </Link>
+                {canAdd && (
+                    <Link href="/leads/new">
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Lead
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             {/* Stats Cards - Removed for now as they require backend support with pagination. 

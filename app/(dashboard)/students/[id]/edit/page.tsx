@@ -16,6 +16,7 @@ import { formSchema, FormValues } from '@/components/students/registration-wizar
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
+import { OwnerSelector } from '@/components/shared/owner-selector';
 
 const RequiredStar = () => <span className="text-destructive">*</span>;
 
@@ -26,6 +27,8 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [documents, setDocuments] = useState<any[]>([]);
     const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+    const [ownerType, setOwnerType] = useState('');
+    const [ownerId, setOwnerId] = useState('');
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -110,6 +113,10 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                 // Set documents
                 setDocuments(student.studentDocuments || []);
 
+                // Load existing owner
+                setOwnerType(student.ownerType || '');
+                setOwnerId(student.ownerId || '');
+
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching student:', error);
@@ -134,6 +141,9 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                     haveTc: data.haveTc === 'yes',
                     blueCard: data.blueCard === 'yes',
                     fullName: `${data.firstName} ${data.lastName}`,
+                    // Include owner assignment
+                    ownerType: ownerType || undefined,
+                    ownerId: ownerId || undefined,
                 }),
             });
 
@@ -1123,6 +1133,25 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                                     </div>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Owner Assignment */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <User className="h-5 w-5" />
+                                <CardTitle>Record Owner</CardTitle>
+                            </div>
+                            <CardDescription>Assign this student to a user or agent for View Own access control</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <OwnerSelector
+                                ownerType={ownerType}
+                                ownerId={ownerId}
+                                onOwnerTypeChange={(t) => { setOwnerType(t); setOwnerId(''); }}
+                                onOwnerIdChange={setOwnerId}
+                            />
                         </CardContent>
                     </Card>
 

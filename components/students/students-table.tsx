@@ -38,6 +38,8 @@ interface StudentsTableProps {
     onPageSizeChange: (pageSize: number) => void;
     onSearchChange: (query: string) => void;
     onRefresh: () => void;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export function StudentsTable({
@@ -51,6 +53,8 @@ export function StudentsTable({
     onPageSizeChange,
     onSearchChange,
     onRefresh,
+    canEdit = true,
+    canDelete = true,
 }: StudentsTableProps) {
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [isDeleting, setIsDeleting] = useState(false);
@@ -176,40 +180,46 @@ export function StudentsTable({
                 </div>
             </div>
 
-            {/* Bulk Actions */}
-            {selectedRows.size > 0 && (
+            {/* Bulk Actions (Only render if permission allows) */}
+            {(selectedRows.size > 0 && (canEdit || canDelete)) && (
                 <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <span className="text-sm text-muted-foreground">
                         {selectedRows.size} selected
                     </span>
                     <div className="flex gap-2 ml-auto">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleBulkActivate(true)}
-                            disabled={isDeleting}
-                        >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Activate
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleBulkActivate(false)}
-                            disabled={isDeleting}
-                        >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Deactivate
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={handleBulkDelete}
-                            disabled={isDeleting}
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                        </Button>
+                        {canEdit && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleBulkActivate(true)}
+                                    disabled={isDeleting}
+                                >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Activate
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleBulkActivate(false)}
+                                    disabled={isDeleting}
+                                >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Deactivate
+                                </Button>
+                            </>
+                        )}
+                        {canDelete && (
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={handleBulkDelete}
+                                disabled={isDeleting}
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
@@ -220,10 +230,12 @@ export function StudentsTable({
                     <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
                             <TableHead className="w-[50px]">
-                                <Checkbox
-                                    checked={selectedRows.size === students.length && students.length > 0}
-                                    onCheckedChange={toggleAll}
-                                />
+                                {(canEdit || canDelete) && (
+                                    <Checkbox
+                                        checked={selectedRows.size === students.length && students.length > 0}
+                                        onCheckedChange={toggleAll}
+                                    />
+                                )}
                             </TableHead>
                             <TableHead>Student ID</TableHead>
                             <TableHead>Name</TableHead>
@@ -261,10 +273,12 @@ export function StudentsTable({
                                         }}
                                     >
                                         <TableCell className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selectedRows.has(student.id)}
-                                                onCheckedChange={() => toggleRow(student.id)}
-                                            />
+                                            {(canEdit || canDelete) && (
+                                                <Checkbox
+                                                    checked={selectedRows.has(student.id)}
+                                                    onCheckedChange={() => toggleRow(student.id)}
+                                                />
+                                            )}
                                         </TableCell>
                                         <TableCell className="font-medium">
                                             {student.studentId || 'N/A'}
@@ -283,7 +297,7 @@ export function StudentsTable({
                                                 </p>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{student.country || student.nationality || 'N/A'}</TableCell>
+                                        <TableCell>{student.nationalityName || student.country || student.nationality || 'N/A'}</TableCell>
                                         <TableCell>
                                             <Badge
                                                 style={{
@@ -303,7 +317,12 @@ export function StudentsTable({
                                             {student.tuitionFees ? `$${student.tuitionFees.toLocaleString()}` : 'N/A'}
                                         </TableCell>
                                         <TableCell onClick={(e) => e.stopPropagation()}>
-                                            <StudentsRowActions student={student} onRefresh={onRefresh} />
+                                            <StudentsRowActions
+                                                student={student}
+                                                onRefresh={onRefresh}
+                                                canEdit={canEdit}
+                                                canDelete={canDelete}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 );

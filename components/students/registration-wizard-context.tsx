@@ -52,6 +52,10 @@ export const formSchema = z.object({
     masterCountry: z.string().optional(),
     masterSchoolName: z.string().optional(),
     masterGpa: z.string().optional(),
+
+    // Owner fields
+    ownerType: z.string().optional(),  // 'Direct' | 'Agent'
+    ownerId: z.string().optional(),    // User ID or Agent ID
 }).refine((data) => {
     if (data.haveTc === 'yes' && !data.tcNumber) {
         return false;

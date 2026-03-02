@@ -24,27 +24,32 @@ import {
     CheckCircle2,
     ArrowLeft,
     Plus,
+    ArrowRight,
+    ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import AddApplicationModal from '@/components/AddApplicationModal';
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params);
     const [student, setStudent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [showAddAppModal, setShowAddAppModal] = useState(false);
+
+    const fetchStudent = async () => {
+        try {
+            const res = await fetch(`/api/students/${id}`);
+            const data = await res.json();
+            setStudent(data);
+        } catch (error) {
+            console.error('Error fetching student:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        async function fetchStudent() {
-            try {
-                const res = await fetch(`/api/students/${id}`);
-                const data = await res.json();
-                setStudent(data);
-            } catch (error) {
-                console.error('Error fetching student:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
         fetchStudent();
     }, [id]);
 
@@ -233,7 +238,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Nationality</p>
-                                        <p className="font-medium">{student.nationality || 'N/A'}</p>
+                                        <p className="font-medium">{student.nationalityName || student.nationality || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Passport Number</p>
@@ -426,66 +431,97 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                                 Student application history
                             </p>
                         </div>
-                        <Link href={`/applications/new?studentId=${student.id}`}>
-                            <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Application
-                            </Button>
-                        </Link>
+                        <Button onClick={() => setShowAddAppModal(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Application
+                        </Button>
                     </div>
 
                     {student.applications && student.applications.length > 0 ? (
                         <div className="grid gap-4">
-                            {student.applications.map((app: any) => (
-                                <Card key={app.id} className="hover:shadow-lg transition-shadow">
-                                    <CardContent className="p-6">
-                                        <div className="flex items-start justify-between">
-                                            <div className="space-y-2 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                                                    <h4 className="font-semibold">{app.program.name}</h4>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {app.program.university.name}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                                    <div className="flex items-center gap-1">
-                                                        <Calendar className="h-3 w-3" />
-                                                        Applied: {new Date(app.applicationDate).toLocaleDateString()}
+                            {student.applications.map((app: any) => {
+                                const stageColors: Record<string, string> = {
+                                    'Draft': 'bg-gray-100 text-gray-800 border-gray-200',
+                                    'Submitted': 'bg-blue-100 text-blue-800 border-blue-200',
+                                    'Under Review': 'bg-amber-100 text-amber-800 border-amber-200',
+                                    'Missing Docs': 'bg-orange-100 text-orange-800 border-orange-200',
+                                    'Conditional Acceptance': 'bg-purple-100 text-purple-800 border-purple-200',
+                                    'Final Acceptance': 'bg-green-100 text-green-800 border-green-200',
+                                    'Enrolled': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+                                    'Rejected': 'bg-red-100 text-red-800 border-red-200',
+                                    'Cancelled': 'bg-gray-100 text-gray-500 border-gray-200',
+                                };
+
+                                return (
+                                    <Card key={app.id} className="hover:shadow-md transition-all border-l-4 group" style={{ borderLeftColor: app.stage === 'Enrolled' ? '#06b6d4' : app.stage === 'Final Acceptance' ? '#10b981' : '#e5e7eb' }}>
+                                        <CardContent className="p-5">
+                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                                <div className="space-y-3 flex-1">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <Link href={`/applications/${app.id}`} className="text-lg font-bold text-primary hover:underline flex items-center gap-2 group-hover:text-blue-700 transition-colors">
+                                                                {app.applicationName || app.id}
+                                                                <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            </Link>
+                                                            <Badge variant="outline" className={`font-normal ${stageColors[app.stage] || 'bg-gray-100'}`}>
+                                                                {app.stage}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                                            <GraduationCap className="h-4 w-4" />
+                                                            <span className="font-medium text-foreground">{app.program?.name}</span>
+                                                        </div>
+                                                        {app.program?.faculty?.name && (
+                                                            <p className="text-sm text-muted-foreground ml-6">
+                                                                {app.program.faculty.name}
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                    {app.priority && (
-                                                        <Badge variant={app.priority === 'High' ? 'destructive' : 'secondary'}>
-                                                            {app.priority}
-                                                        </Badge>
-                                                    )}
+
+                                                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground bg-muted/30 p-2 rounded-md w-fit">
+                                                        {app.academicYear && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Calendar className="h-3.5 w-3.5 text-primary/70" />
+                                                                <span className="font-medium">{app.academicYear.name}</span>
+                                                            </div>
+                                                        )}
+                                                        {app.semester && (
+                                                            <>
+                                                                <span className="text-muted-foreground/30">•</span>
+                                                                <span className="font-medium">{app.semester.name}</span>
+                                                            </>
+                                                        )}
+                                                        <span className="text-muted-foreground/30">•</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Clock className="h-3.5 w-3.5 text-primary/70" />
+                                                            <span>Applied: {new Date(app.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex md:flex-col items-center md:items-end gap-3 min-w-[140px]">
+                                                    <Link href={`/applications/${app.id}`} className="w-full">
+                                                        <Button variant="outline" size="sm" className="w-full">
+                                                            Manage
+                                                            <ChevronRight className="h-3 w-3 ml-1" />
+                                                        </Button>
+                                                    </Link>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <Badge variant="default">
-                                                    {app.status}
-                                                </Badge>
-                                                <Link href={`/applications/${app.id}`}>
-                                                    <Button variant="outline" size="sm">
-                                                        View Details
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     ) : (
                         <Card>
                             <CardContent className="p-12 text-center">
                                 <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                 <p className="text-muted-foreground mb-4">No applications yet</p>
-                                <Link href={`/applications/new?studentId=${student.id}`}>
-                                    <Button variant="outline">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Create First Application
-                                    </Button>
-                                </Link>
+                                <Button variant="outline" onClick={() => setShowAddAppModal(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create First Application
+                                </Button>
                             </CardContent>
                         </Card>
                     )}
@@ -671,6 +707,15 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Add Application Modal */}
+            <AddApplicationModal
+                open={showAddAppModal}
+                onOpenChange={setShowAddAppModal}
+                studentId={student.id}
+                studentName={student.fullName || `${student.firstName} ${student.lastName}`}
+                onSuccess={fetchStudent}
+            />
         </div>
     );
 }

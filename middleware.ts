@@ -60,7 +60,19 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('access_token');
 
     if (!token || !isValidJwtStructure(token.value)) {
-        // Clear invalid token cookie
+        // For API routes, return JSON 401 instead of redirecting to login page
+        if (pathname.startsWith('/api/')) {
+            const response = NextResponse.json(
+                { message: 'Unauthorized' },
+                { status: 401 }
+            );
+            if (token) {
+                response.cookies.delete('access_token');
+            }
+            return response;
+        }
+
+        // For page routes, redirect to login
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         const response = NextResponse.redirect(loginUrl);

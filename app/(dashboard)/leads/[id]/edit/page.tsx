@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { OwnerSelector } from '@/components/shared/owner-selector';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
 
 const leadTypes = ['Student', 'University', 'Agent'];
 const leadSources = ['Website', 'Referral', 'Social Media', 'Email', 'Phone', 'Event', 'Other'];
@@ -21,6 +23,9 @@ export default function EditLeadPage({ params }: { params: Promise<{ id: string 
     const [leadId, setLeadId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [ownerType, setOwnerType] = useState('');
+    const [ownerId, setOwnerId] = useState('');
+    const { user: currentUser } = useCurrentUser();
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -61,6 +66,10 @@ export default function EditLeadPage({ params }: { params: Promise<{ id: string 
                     notes: lead.notes || '',
                 });
 
+                // Load existing owner
+                setOwnerType(lead.ownerType || '');
+                setOwnerId(lead.ownerId || '');
+
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching lead:', error);
@@ -81,7 +90,10 @@ export default function EditLeadPage({ params }: { params: Promise<{ id: string 
             const response = await fetch(`/api/leads/${leadId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    ...(ownerType ? { ownerType, ownerId } : {}),
+                }),
             });
 
             if (!response.ok) throw new Error('Failed to update lead');
@@ -272,6 +284,24 @@ export default function EditLeadPage({ params }: { params: Promise<{ id: string 
                             onChange={(e) => handleChange('notes', e.target.value)}
                             rows={5}
                             placeholder="Add any additional notes about this lead..."
+                        />
+                    </CardContent>
+                </Card>
+
+                {/* Owner Assignment */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Record Owner</CardTitle>
+                        <CardDescription>Assign this lead to a user or agent for View Own access control</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <OwnerSelector
+                            ownerType={ownerType}
+                            ownerId={ownerId}
+                            onOwnerTypeChange={(t) => { setOwnerType(t); setOwnerId(''); }}
+                            onOwnerIdChange={setOwnerId}
+                            required
+                            initialUserId={currentUser?.id}
                         />
                     </CardContent>
                 </Card>

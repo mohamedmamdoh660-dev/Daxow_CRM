@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { ProgramsTable } from '@/components/programs/programs-table';
 import { useDebounce } from '@/hooks/use-debounce';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function ProgramsPage() {
+    const { canAdd, canEdit, canDelete } = usePermissions('Programs');
     const [data, setData] = useState<any[]>([]);
     const [meta, setMeta] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
     const [loading, setLoading] = useState(true);
@@ -79,12 +81,14 @@ export default function ProgramsPage() {
                     <h1 className="text-3xl font-bold">Programs</h1>
                     <p className="text-muted-foreground">Manage academic program catalog</p>
                 </div>
-                <Button asChild>
-                    <Link href="/programs/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Program
-                    </Link>
-                </Button>
+                {canAdd && (
+                    <Button asChild>
+                        <Link href="/programs/new">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Program
+                        </Link>
+                    </Button>
+                )}
             </div>
 
             <ProgramsTable
@@ -101,6 +105,8 @@ export default function ProgramsPage() {
                     setMeta(prev => ({ ...prev, page: 1 }));
                 }}
                 onRefresh={fetchPrograms}
+                canEdit={canEdit}
+                canDelete={canDelete}
             />
         </div>
     );

@@ -33,6 +33,11 @@ export default function LoginPage() {
             }
 
             const data = await res.json();
+            // Store role and permissions so sidebar can show the right links
+            if (data.user) {
+                localStorage.setItem('userRole', data.user.role || '');
+                localStorage.setItem('userMeta', JSON.stringify(data.user));
+            }
             router.push("/dashboard");
         } catch (err: any) {
             setError(err.message || "Something went wrong");

@@ -11,18 +11,25 @@ import {
     DefaultValuePipe,
     HttpCode,
     HttpStatus,
+    UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { CountriesService } from './countries.service';
 import { CreateCountryDto } from './dto/create-country.dto';
 import { UpdateCountryDto } from './dto/update-country.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Countries')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('countries')
 export class CountriesController {
     constructor(private readonly countriesService: CountriesService) { }
 
     @Post()
+    @RequirePermissions({ module: 'Countries & Cities', action: 'add' })
     @ApiOperation({ summary: 'Create a new country' })
     @ApiResponse({ status: 201, description: 'Country created successfully' })
     @ApiResponse({ status: 409, description: 'Country already exists' })
@@ -31,6 +38,7 @@ export class CountriesController {
     }
 
     @Get()
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
     @ApiOperation({ summary: 'Get all countries' })
     @ApiResponse({ status: 200, description: 'List of all active countries' })
     findAll(
@@ -51,6 +59,7 @@ export class CountriesController {
     }
 
     @Get(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
     @ApiOperation({ summary: 'Get a country by ID' })
     @ApiResponse({ status: 200, description: 'Country found' })
     @ApiResponse({ status: 404, description: 'Country not found' })
@@ -59,6 +68,7 @@ export class CountriesController {
     }
 
     @Patch(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'edit' })
     @ApiOperation({ summary: 'Update a country' })
     @ApiResponse({ status: 200, description: 'Country updated successfully' })
     @ApiResponse({ status: 404, description: 'Country not found' })
@@ -68,6 +78,7 @@ export class CountriesController {
     }
 
     @Delete(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'delete' })
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Delete a country (soft delete)' })
     @ApiResponse({ status: 204, description: 'Country deleted successfully' })

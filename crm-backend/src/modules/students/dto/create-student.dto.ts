@@ -162,4 +162,16 @@ export class CreateStudentDto {
 
     @IsOptional()
     metadata?: any;
+
+    @IsOptional()
+    @IsString()
+    ownerId?: string;  // User ID (Direct) or Agent ID (Agent)
+
+    @IsOptional()
+    @IsString()
+    ownerType?: string;  // 'Direct' | 'Agent'
+
+    @IsOptional()
+    @IsString()
+    assignedTo?: string;
 }

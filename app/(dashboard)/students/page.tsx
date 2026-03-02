@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Plus, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { StudentsTable } from '@/components/students/students-table';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function StudentsPage() {
+    const { canAdd, canEdit, canDelete } = usePermissions('Students');
     const [students, setStudents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalCount, setTotalCount] = useState(0);
@@ -50,12 +52,14 @@ export default function StudentsPage() {
                         Manage enrolled and active students
                     </p>
                 </div>
-                <Link href="/students/new">
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Student
-                    </Button>
-                </Link>
+                {canAdd && (
+                    <Link href="/students/new">
+                        <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Student
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <Card>
@@ -77,6 +81,8 @@ export default function StudentsPage() {
                         onPageSizeChange={setPageSize}
                         onSearchChange={setSearchQuery}
                         onRefresh={fetchStudents}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
                     />
                 </CardContent>
             </Card>

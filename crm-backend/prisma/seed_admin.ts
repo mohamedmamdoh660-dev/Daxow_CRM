@@ -13,14 +13,14 @@ async function main() {
         where: { email },
         update: {
             password: hashedPassword,
-            role: 'admin',
+            role: undefined, // Role is now relational
             firstName: 'Admin',
             lastName: 'User',
         },
         create: {
             email,
             password: hashedPassword,
-            role: 'admin',
+            role: undefined, // Role is now relational
             firstName: 'Admin',
             lastName: 'User',
             name: 'Admin User',

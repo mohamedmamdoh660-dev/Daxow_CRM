@@ -1,20 +1,26 @@
-
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
 
 COPY package*.json ./
 COPY prisma ./prisma/
 
+RUN apt-get update -y && apt-get install -y openssl ca-certificates
+
 RUN npm ci
+
 
 COPY . .
 
 RUN npm run build
-# Generate Prisma Client
 RUN npx prisma generate
 
-FROM node:20-alpine
+FROM node:20-slim
+
+WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl ca-certificates
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./

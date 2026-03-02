@@ -1,8 +1,391 @@
 # CHANGELOG
 
-# CHANGELOG
-
 All notable changes to the Admission CRM project will be documented in this file.
+
+## [2026-02-28] - Owner Field for Students, Leads & Applications 👤
+
+### Added — Database
+- New fields `ownerId` (String?) and `ownerType` (String: 'Direct'|'Agent') added to `Student`, `Lead`, and `Application` Prisma models, with DB indexes.
+- Applied via `prisma db push`.
+
+### Added — Backend
+- `CreateStudentDto`, `CreateLeadDto`, `CreateApplicationDto` all accept new `ownerId` and `ownerType` fields.
+- `students.service.ts`, `leads.service.ts`, `applications.service.ts` now filter by `ownerId` (not `assignedTo`) when View Own scope is active.
+
+### Added — Frontend
+- New shared component `components/shared/owner-selector.tsx`: renders an Owner Type toggle (Direct/Agent) + active user/agent dropdown.
+- Integrated `OwnerSelector` into the **Lead creation form** (`/leads/new`) under a "Record Owner" section.
+- Integrated `OwnerSelector` into the **Student registration wizard** (step 3 — summary) before final submission.
+- `registration-wizard-context.tsx` formSchema extended with `ownerType` and `ownerId` optional fields.
+
+### Fixed — Roles Page
+- `VIEW_OWN_MODULES` constant introduced: View Own and View All checkboxes are now disabled (shown as —) for all modules **except** Students, Leads, Applications.
+- All other modules only have: Add, Edit, Delete, Export, Import permissions.
+
+---
+
+## [2026-02-28] - Full RBAC Rollout Across All Modules 🔐
+
+
+### Added
+- **`resolveViewScope` helper** (`src/common/helpers/view-scope.helper.ts`): Shared backend utility that checks if a user has `view_all` permission or only `view` (view_own), removing duplicated permission logic across controllers.
+
+### Fixed — Backend (View Own Filtering)
+- **Students** (`students.controller.ts`, `.service.ts`, `.module.ts`): `GET /students` now filters by `assignedTo = userId` when user only has `view` permission.
+- **Leads** (`leads.controller.ts`, `.service.ts`, `.module.ts`): `GET /leads` now filters by `assignedTo = userId` for `view` (view_own) users.
+- **Applications** (`applications.controller.ts`, `.service.ts`, `.module.ts`): `GET /applications` now filters to applications whose student is `assignedTo = userId` for view_own users.
+
+### Fixed — Frontend (Permission-Gated UI)
+All pages now use `usePermissions()` hook to conditionally show/hide Add/Edit/Delete buttons:
+- `academic-years/page.tsx` → "Add Academic Year" button respects `canAdd`
+- `degrees/page.tsx` → "Add Degree" button respects `canAdd`
+- `faculties/page.tsx` → "Add Faculty" button respects `canAdd`
+- `leads/page.tsx` → "Add Lead" button respects `canAdd`
+- `roles/page.tsx` → "New Group" button respects `canAdd`
+- `users/page.tsx` → "Add User", Edit, Reset Password, Toggle, Delete buttons all respect `canAdd`/`canEdit`/`canDelete`
+
+---
+
+## [2026-02-28] - View Own Permission Enforcement 🔒
+
+
+### Fixed
+- **Students View Own**: When a user's role only has `View` (not `View All`) on the Students module, the `GET /students` endpoint now filters results to only students where `assignedTo = currentUserId`. Previously all students were visible regardless.
+  - `students.controller.ts`: Fetches the user's live permissions from DB on each request, detects whether they have `view_all` or only `view`, and passes an `assignedToFilter` to the service.
+  - `students.service.ts`: `findAll()` now accepts an optional `assignedToFilter` parameter that adds an `assignedTo` filter to the Prisma query.
+  - `students.module.ts`: Added `PrismaService` to providers for controller injection.
+
+---
+
+## [2026-02-28] - Frontend RBAC Permissions Enforcement 🔐
+
+
+### Added
+- **`usePermissions` Hook** (`lib/hooks/use-permissions.ts`): New custom React hook that reads user permissions from `localStorage` and exposes boolean flags (`canView`, `canAdd`, `canEdit`, `canDelete`, `canExport`, `canImport`) per module.
+
+### Fixed
+- **Students Page** (`app/(dashboard)/students/page.tsx`): The "Add Student" button is now hidden if the current user doesn't have the `add` permission on the `Students` module.
+- **Students Table** (`components/students/students-table.tsx`): Bulk action buttons (Activate, Deactivate, Delete) and the row selection checkboxes are now conditionally rendered based on `canEdit` and `canDelete` permissions.
+- **Students Row Actions** (`components/students/students-row-actions.tsx`): The "Edit", "Activate/Deactivate", and "Delete" dropdown menu items are now hidden for users without the corresponding permissions.
+- **Programs Page** (`app/(dashboard)/programs/page.tsx`): The "Add Program" button is now conditionally rendered based on `canAdd`.
+- **Programs Table** (`components/programs/programs-table.tsx`): The Edit and Delete action buttons are now hidden per-row when the user lacks `canEdit` or `canDelete` permissions.
+
+---
+
+## [2026-02-27] - Populate Country Database 🌍
+
+
+### Added
+- **Countries Data**: Seeded the `Country` module with 250 countries from the REST Countries API (including names, ISO codes, phone codes, and regions).
+
+### Fixed
+- **Application Form Logic**:
+  - **Student List:** Fixed empty student dropdowns by properly extracting `.students` array from paginated backend response (`StudentsService` returns `{students: [], total: ...}`).
+  - **Dropdown Filtering:** Academic Years, Semesters, and Degrees now properly filter to show only `isActive = true`.
+  - **Program Dependency & Filtering:** Changed the form flow so the `Program` dropdown is at the bottom. The Program list is now dynamically filtered to show only programs where `isActive = true`, `activeApplications = true`, AND `degreeId` matches the selected Degree.
+  - Applied fixes to both `/applications/new/page.tsx` and the `AddApplicationModal` component.
+
+---
+
+## [2026-02-26] - Fix Database Connection Leak & Stability ⚡
+
+### Fixed
+- **Duplicate PrismaClient Instances**: `users.module.ts` and `roles.module.ts` were declaring `PrismaService` as their own local provider, creating isolated `PrismaClient` instances (and separate DB connections) despite `DatabaseModule` being `@Global()`. Removed the redundant declarations so all modules share the single global instance.
+- **PrismaService Resilience**: Added retry logic with exponential backoff (up to 5 retries) in `prisma.service.ts`. The backend now recovers from temporary network hiccups instead of crashing on startup or disconnection.
+- **Frontend Prisma Singleton**: `lib/prisma.ts` was only caching the `PrismaClient` in `development` mode. In `production`, each request could create a new client and connection. Fixed to cache in all environments.
+
+### Files Modified
+- `crm-backend/src/modules/users/users.module.ts` — Removed local `PrismaService` provider
+- `crm-backend/src/modules/roles/roles.module.ts` — Removed local `PrismaService` provider
+- `crm-backend/src/database/prisma.service.ts` — Added `connectWithRetry()` with exponential backoff
+- `lib/prisma.ts` — Fixed singleton caching for all environments
+
+---
+
+## [2026-02-28] - Roles Page Logic & API RBAC Enforcement 🛡️
+
+
+### Changed
+- **Backend API Routes**: The `@Roles()` and generic JWT guards have been replaced by the `@RequirePermissions` decorator and `PermissionsGuard` across all 14 major backend controllers (Students, Applications, Leads, Programs, Academic Years, Semesters, Cities, Countries, Faculties, Degrees, Languages, Titles, Agents, Roles/Users).
+- **Backend Guard Logic**: `PermissionsGuard` now fetches a user's role-based permissions dynamically per request to ensure accurate and granular access control mapping modules (`Module Name`) and actions (`add`, `view`, `view_all`, `edit`, `delete`).
+- **Frontend Roles Matrix**: Added the 'View All' action to the permission matrix.
+- **Frontend Logic**: Updated the matrix toggle logic: `Add/Edit/Delete` actions are now disabled and automatically unchecked if neither `View Own` nor `View All` are selected for a module, creating a logical dependency.
+
+## [2026-02-25] - Group-Based RBAC with Granular Permissions 🛡️
+
+### Changed
+- **Database**: Added `UserGroup` junction table for many-to-many User↔Group relationship. Removed `roleId` FK from `User`; users can now belong to multiple groups simultaneously.
+- **Database**: Expanded `Permission.action` from CRUD to: `view`, `add`, `edit`, `delete`, `export`, `import`.
+- **Backend**: Rewrote `UsersService` — multi-group assignment, password reset (`resetPassword`), delete with record transfer (`transferRecords`), merged permissions from all groups in JWT.
+- **Backend**: Rewrote `RolesService` — group member count, blocks deletion if members exist.
+- **Backend**: `AuthService` now merges permissions from all user groups into JWT payload.
+- **Backend**: `UsersController` — new `/users/:id/reset-password` PATCH endpoint.
+- **Frontend**: `/roles` page redesigned — group cards showing member count, 6-column permission matrix (View/Add/Edit/Delete/Export/Import), toggle-all per row/column, Select All/Clear All.
+- **Frontend**: `/users` page redesigned — multi-group checkbox selector, Reset Password dialog, Delete with Transfer Records step.
+- **Frontend**: Added `/api/users/[id]/reset-password` proxy route.
+
+## [2026-02-22] - Dynamic Role-Based Access Control (RBAC) 🛡️
+
+
+### Added
+- **Feature**: Replaced static user roles with dynamic Role-Based Access Control (RBAC).
+- **Database**: Introduced `Role` and `Permission` models in Prisma to manage granular module-level access (create, read, update, delete).
+- **Backend**: Implemented `RolesModule` with full CRUD capabilities and updated `UsersModule` and `AuthModule` to include dynamic role permissions in the JWT payload.
+- **Frontend**: Developed `/roles` page for admins to manage roles and their explicit permissions using a checkbox matrix.
+- **Frontend**: Updated the Sidebar to dynamically display accessible links based on the user's fetched permissions.
+- **Frontend**: Updated User management module to use dynamic roles instead of old static arrays.
+- **Roles Page** (`/roles`): Visual permission matrix showing Admin vs Staff access for all 14 modules. Includes role cards with descriptions and a legend.
+- **Sidebar**: Roles link (admin-only) added below Users link.
+
+---
+
+## [2026-02-22] - User Management Module 👥
+
+
+### Added
+- **Backend `UsersModule`**: Full NestJS CRUD for system users — list, create, update, toggle active/inactive, delete. Admin-only (protected by `@Roles('admin')`).
+- **API Proxy Routes**: 3 Next.js API routes (`/api/users`, `/api/users/[id]`, `/api/users/[id]/toggle`).
+- **Admin Users Page** (`/users`): Stats bar (Total, Active, Inactive, Admins), search + role filter, users table with avatar, role badge, status badge, last login. Full dialogs for Create, Edit, Toggle, Delete.
+- **Sidebar**: "Users" link (with shield icon) visible to admin role only.
+- **Role Persistence**: User role stored in `localStorage` after login so sidebar can filter admin-only links.
+
+### Files Added
+- `crm-backend/src/modules/users/` — DTOs, service, controller, module (5 files)
+- `app/api/users/route.ts`, `app/api/users/[id]/route.ts`, `app/api/users/[id]/toggle/route.ts`
+- `app/(dashboard)/users/page.tsx`
+
+### Files Modified
+- `crm-backend/src/app.module.ts` — Registered `UsersModule`
+- `components/layout/sidebar.tsx` — Added admin-only Users link with role filtering
+- `app/login/page.tsx` — Store `userRole` in `localStorage` on successful login
+
+---
+
+## [2026-02-21] - Fix Student Module 500 Error & Centralize Backend Config 🔧
+
+
+### Fixed
+- **Student Module 500 Error**: Resolved `PrismaClientKnownRequestError P2022` where `Application.crmId` did not exist in the current database. Root cause was a stale Prisma Client generated from an outdated schema. Fixed by running `prisma db pull` to sync schema with real DB, then `prisma generate` to regenerate both backend and frontend clients.
+
+### Refactored
+- **Centralized Backend URL**: Eliminated duplicated `const BACKEND_URL = process.env...` from all 34 API proxy route files. Created `lib/backend-client.ts` as a single source of truth. All routes now `import { BACKEND_URL } from '@/lib/backend-client'`.
+
+### Files Added
+- `lib/backend-client.ts` — Centralized NestJS backend URL configuration
+
+### Files Modified
+- `crm-backend/prisma/schema.prisma` — Re-synced with real Supabase DB via `prisma db pull`
+- 34 files under `app/api/` — Replaced inline `BACKEND_URL` definition with centralized import
+
+---
+
+
+## [2026-02-21] - Performance Optimization: Fix N+1 Query in Students Module ⚡
+
+### Fixed
+- **N+1 Query Problem**: `StudentsService.findAll()` was executing one DB query per student to resolve the nationality name (e.g., 10 students = 10+ extra queries). Replaced with a single batch query using `prisma.country.findMany({ where: { id: { in: [...] } } })`.
+- **Over-fetching**: Changed `include` to `select` in `findAll()` to fetch only the fields needed for the list view, avoiding loading full agent, application, program, and faculty records unnecessarily.
+
+### Files Modified
+- `crm-backend/src/modules/students/students.service.ts` — Replaced `resolveNationalityName()` with `batchResolveNationalities()`, optimized `findAll()` select fields
+
+---
+
+## [2026-02-14] - Application Documents UI Improvements 📄
+
+
+### Improved
+- **Missing Docs Workflow**: Added dedicated `Missing Docs` stage to application workflow with visual alerts.
+- **Student Documents UI**: Refactored from grid view to list/table view for better readability and file management.
+- **Passport Detection**: Fixed logic where uploaded passports were marked "Missing" due to case sensitivity/alias issues.
+- **Conditional Alerts**: "Missing Documents" alert now only appears when the application stage is explicitly set to "Missing Docs".
+
+### Files Modified
+- `app/(dashboard)/applications/[id]/page.tsx`
+- `app/(dashboard)/applications/page.tsx`
+- `components/AddApplicationModal.tsx`
+
+---
+
+## [2026-02-14] - Fix Nationality Displaying as UUID 🔧
+
+### Fixed
+- **Nationality showing UUID instead of country name**: The `nationality` field stores a country ID but the frontend was displaying the raw ID. Backend now resolves the country name via a lookup in the `Country` table and returns `nationalityName`. Both the students list and student profile pages now display the correct country name.
+
+### Files Modified
+- `crm-backend/src/modules/students/students.service.ts` — Added `resolveNationalityName()` helper, used in `findAll` and `findOne`
+- `app/(dashboard)/students/[id]/page.tsx` — Display `nationalityName` in profile Overview
+- `components/students/students-table.tsx` — Display `nationalityName` in student list table
+
+### Fixed
+- **Student Update 500 Error**: Fixed an issue where updating a student with empty optional fields (like `highSchoolGpa`) caused a 500 Internal Server Error. Prisma was rejecting empty strings for Decimal/Date fields. Added sanitization in `StudentsService.update` to convert empty strings to `null`.
+
+---
+
+## [2026-02-14] - Fix Uploaded Files Returning 404 🔧
+
+### Fixed
+- **Uploaded files returning 404**: Files uploaded via local storage fallback (when Supabase is not configured) were returning 404 because Next.js standalone mode doesn't serve runtime-written files from `public/`. Created API route `/api/uploads/[...path]` to serve uploaded files.
+
+### Added
+- `app/api/uploads/[...path]/route.ts` — File-serving API route with security checks and correct content-type headers
+
+### Files Modified
+- `lib/local-storage.ts` — Changed URL prefix from `/uploads/` to `/api/uploads/`
+- `Dockerfile` — Added writable uploads directory creation for Docker runtime
+
+---
+
+## [2026-02-14] - Student Document Upload Fix on Create 🔧
+
+### Fixed
+- **Documents not saved during student creation**: When creating a new student, uploaded documents were stored only as JSON in the `documents` field but NOT as proper `Document` table records. This meant they didn't appear in the Student Docs tab. Now the backend creates proper `Document` records after student creation, matching the behavior of the edit flow.
+
+### Files Modified
+- `crm-backend/src/modules/students/students.service.ts` - Added Document record creation in `create()` method
+
+---
+
+## [2026-02-14] - Application Document Tabs & Bug Fixes 📄
+
+### Added
+- **Student Documents Tab**: Read-only view of student profile documents inside the Application Detail page with visual indicators (✅/❌) for missing required docs (Passport, Transcript, Photo)
+- **Application Documents Tab**: Upload application-specific documents with type selector (Payment Receipt, Initial Acceptance, Final Acceptance, Other), grouped display by document type, and delete support
+- **Delete Confirmation**: Document deletion now requires user confirmation before proceeding
+
+### Fixed
+- **DocumentCard Crash**: Fixed crash when `fileSize` is null/undefined (division by zero → NaN)
+- **Missing Doc Indicators**: Made required document comparison case-insensitive with alias support
+- **FileUpload Accept Types**: Expanded accepted file types to include Word documents (.doc, .docx) in addition to images and PDF
+- **Duplicate Import**: Removed duplicate `Briefcase` import that caused build failure
+
+### Files Modified
+- `app/(dashboard)/applications/[id]/page.tsx` - New tabs, bug fixes, delete confirmation
+- `crm-backend/src/modules/applications/applications.service.ts` - Added `studentDocuments` to `detailIncludes`
+
+---
+
+## [2026-02-14] - Application Detail Page 📋
+
+### Added
+- **Comprehensive Application Detail Page**: Full-featured detail view accessible at `/applications/[id]` with:
+  - **Header**: Application ID, stage badge, program name, academic year/semester, created/updated dates
+  - **Stage Management**: Dropdown to change application stage with visual progress bar (Draft → Submitted → Under Review → Conditional Acceptance → Final Acceptance), plus special badges for Rejected/Enrolled/Cancelled
+  - **Quick Stats Cards**: Degree, Documents count, Tasks count, Tuition amount
+  - **5 Tabs**: Overview, Student, Documents, Tasks, Timeline
+  - **Overview Tab**: Program info (faculty, specialty, degree, language), Tuition & Financial (with savings calculation), Academic Details, Agent/Agency info, editable Notes section
+  - **Student Tab**: Full student profile with avatar, personal info, contact, address, academic background (High School/Bachelor/Master) with link to student profile
+  - **Documents Tab**: Grid view with file previews, view/download actions
+  - **Tasks Tab**: Task cards with priority badges, status icons, due dates
+  - **Timeline Tab**: Activity history with event types and timestamps
+
+### Files Added
+- `app/(dashboard)/applications/[id]/page.tsx` - Application detail page
+
+---
+
+## [2026-02-14] - Add Application Modal on Student Profile
+
+### Added
+- **Add Application Modal**: "Add Application" button on the student detail page now opens a popup modal dialog instead of redirecting to a separate page. The modal includes all application fields (Program, Academic Year, Semester, Degree, Stage, Agent/Agency, Notes) with tuition display and auto-fill degree from selected program.
+
+### Files Added
+- `components/AddApplicationModal.tsx` - Reusable modal component using Radix UI Dialog
+
+### Files Modified
+- `app/(dashboard)/students/[id]/page.tsx` - Integrated modal, replaced redirect links with onClick handlers, added data refresh on success
+
+---
+
+## [2026-02-13] - Application Module Enhancement
+
+### Added
+- **Agent/Agency Dropdown**: Add Application form now includes an Agent/Agency selector fetching from `/api/agents`.
+- **CRM Reference ID**: New text input for external CRM reference tracking.
+- **Tuition Display**: Program dropdown now shows faculty name and tuition fee. A tuition info card appears below the dropdown with strikethrough pricing for discounted programs.
+- **Auto-fill Degree**: Selecting a program auto-fills the Degree dropdown from the program's associated degree.
+- **Agent Column**: Applications list table now shows Agent company name and contact person.
+- **CRM ID Column**: Applications list table now shows CRM reference ID with a code-styled badge.
+
+### Fixed
+- **Backend Agent Field Selection**: Fixed `listIncludes` and `detailIncludes` to use correct Agent model fields (`companyName`, `contactPerson`) instead of non-existent `name` field.
+
+### Files Modified
+- `app/(dashboard)/applications/new/page.tsx`
+- `app/(dashboard)/applications/page.tsx`
+- `crm-backend/src/modules/applications/applications.service.ts`
+
+---
+
+## [2026-02-13] - Frontend Console Errors Fix
+
+### Fixed
+- **Missing API Proxy Routes**: Created all missing frontend-to-backend proxy routes that were causing 404 HTML responses and `V.map is not a function` errors.
+- **Middleware JSON 401 for API Routes**: Updated `middleware.ts` to return JSON 401 for `/api/` routes instead of redirecting to the HTML login page, preventing JSON parse errors.
+
+### Files Added
+- `app/api/cities/route.ts` (GET, POST)
+- `app/api/cities/[id]/route.ts` (GET, PATCH, DELETE)
+- `app/api/agents/[id]/route.ts` (GET, PATCH, DELETE)
+- `app/api/languages/[id]/route.ts` (GET, PATCH, DELETE)
+- `app/api/specialties/[id]/route.ts` (GET, PATCH, DELETE)
+- `app/api/academic-years/[id]/route.ts` (GET, PATCH, DELETE)
+- `app/api/semesters/[id]/route.ts` (GET, PATCH, DELETE)
+
+### Files Modified
+- `middleware.ts`
+
+## [2026-02-13] - Docker Infrastructure & Login Fix 🐳
+
+### Fixed
+- **Prisma Engine Compatibility**: Switched both `Dockerfile` (frontend) and `crm-backend/Dockerfile` (backend) from `node:20-alpine` to `node:20-slim` to resolve `PrismaClientInitializationError` caused by missing `libssl` on Alpine Linux.
+- **OpenSSL Installation**: Added `apt-get install openssl` to both builder and runner stages in both Dockerfiles so Prisma can detect and use the correct engine binary.
+- **Container Networking**: Frontend could not reach backend via `localhost:3001` inside Docker. Added `INTERNAL_BACKEND_URL=http://backend:3001` environment variable to `docker-compose.yml` and updated **all 27 API proxy route files** under `app/api/` to use it for server-side requests.
+- **Backend Build Structure**: Excluded `prisma` directory from `tsconfig.build.json` to prevent `dist/src/` nesting that caused `Cannot find module '/dist/main'` at startup.
+
+### Files Modified
+- `Dockerfile` - Switched to `node:20-slim`, added OpenSSL
+- `crm-backend/Dockerfile` - Switched to `node:20-slim`, added OpenSSL in builder stage
+- `docker-compose.yml` - Added `INTERNAL_BACKEND_URL` for frontend container
+- `app/api/auth/login/route.ts` - Uses `INTERNAL_BACKEND_URL` for server-side proxy
+- `crm-backend/tsconfig.build.json` - Excluded `prisma` from build
+
+---
+
+## [2026-02-12] - Application Module 📝
+
+### Added
+- **Application Management Module**: Full CRUD for student applications with stage tracking
+- **Backend**:
+  - `ApplicationsService` with pagination, search, multi-field filtering (stage, student, program, academic year, semester, agent, agency), and auto-generated application names (`APP-YYYY-NNN`)
+  - `ApplicationsController` with Swagger docs, `GET /stats` endpoint, and query param support
+  - `CreateApplicationDto` with required fields: `studentId`, `programId`, `academicYearId`, `semesterId`, `degreeId`
+  - Unique constraint handling for duplicate student/program/year combinations
+- **Frontend**:
+  - Applications list page with search, stage filter, stats cards, paginated table, and delete
+  - Add Application form with dropdown selects for student, program, academic year, semester, degree, stage
+  - Auto-selects default academic year and semester
+  - API proxy routes: `/api/applications`, `/api/applications/[id]`, `/api/applications/stats`
+- **Database**:
+  - `Application` model in Prisma schema with relations to `Student`, `Program`, `AcademicYear`, `Semester`, `Degree`, `User`, `Agent`
+  - 8 application stages: Draft, Submitted, Under Review, Conditional Acceptance, Final Acceptance, Rejected, Enrolled, Cancelled
+  - Seeded academic years (2024-2025, 2025-2026, 2026-2027) and semesters (Fall, Spring, Summer)
+
+### Files Added
+- `app/api/applications/route.ts` - API proxy (GET, POST)
+- `app/api/applications/[id]/route.ts` - API proxy (GET, PATCH, DELETE)
+- `app/api/applications/stats/route.ts` - Stats API proxy
+- `app/(dashboard)/applications/new/page.tsx` - Add Application form
+
+### Files Modified
+- `crm-backend/prisma/schema.prisma` - Added Application model and relations
+- `crm-backend/prisma/seed.ts` - Added academic years, semesters, updated admin user
+- `crm-backend/src/modules/applications/applications.service.ts` - Rewritten with pagination/search/filtering
+- `crm-backend/src/modules/applications/applications.controller.ts` - Rewritten with Swagger docs
+- `crm-backend/src/modules/applications/dto/create-application.dto.ts` - Rewritten with new fields
+- `app/(dashboard)/applications/page.tsx` - Rewritten from mock pipeline to data-driven table
+
+---
 
 ## [2026-02-12] - Local Login Fix & Config Cleanup 🔧
 

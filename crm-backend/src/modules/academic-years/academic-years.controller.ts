@@ -9,19 +9,26 @@ import {
     Query,
     ParseIntPipe,
     DefaultValuePipe,
+    UseGuards,
 } from '@nestjs/common';
 import { User } from '../../common/decorators/user.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AcademicYearsService } from './academic-years.service';
 import { CreateAcademicYearDto } from './dto/create-academic-year.dto';
 import { UpdateAcademicYearDto } from './dto/update-academic-year.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Academic Years')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('academic-years')
 export class AcademicYearsController {
     constructor(private readonly academicYearsService: AcademicYearsService) { }
 
     @Post()
+    @RequirePermissions({ module: 'Academic Years', action: 'add' })
     @ApiOperation({ summary: 'Create a new academic year' })
     @ApiResponse({ status: 201, description: 'Academic year created successfully' })
     create(
@@ -32,6 +39,7 @@ export class AcademicYearsController {
     }
 
     @Get()
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
     @ApiOperation({ summary: 'Get all academic years' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -54,6 +62,7 @@ export class AcademicYearsController {
     }
 
     @Get(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
     @ApiOperation({ summary: 'Get academic year by ID' })
     @ApiResponse({ status: 200, description: 'Academic year found' })
     @ApiResponse({ status: 404, description: 'Academic year not found' })
@@ -62,6 +71,7 @@ export class AcademicYearsController {
     }
 
     @Patch(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'edit' })
     @ApiOperation({ summary: 'Update academic year' })
     @ApiResponse({ status: 200, description: 'Academic year updated successfully' })
     @ApiResponse({ status: 404, description: 'Academic year not found' })
@@ -74,6 +84,7 @@ export class AcademicYearsController {
     }
 
     @Delete(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'delete' })
     @ApiOperation({ summary: 'Delete academic year' })
     @ApiResponse({ status: 200, description: 'Academic year deleted successfully' })
     @ApiResponse({ status: 404, description: 'Academic year not found' })

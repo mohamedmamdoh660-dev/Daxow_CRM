@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+import { BACKEND_URL } from '@/lib/backend-client';
 
 export async function POST(request: NextRequest) {
     try {
@@ -37,8 +37,9 @@ export async function POST(request: NextRequest) {
         });
 
         return response;
-    } catch (error) {
-        console.error('Login proxy error:', error);
+    } catch (error: any) {
+        console.error('Login proxy error DETAILS:', error?.message || error);
+        console.error('Login proxy error STACK:', error?.stack);
         return NextResponse.json(
             { message: 'Internal Server Error' },
             { status: 500 }

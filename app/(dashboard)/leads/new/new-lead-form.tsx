@@ -12,6 +12,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 // import { mockLeadSources } from '@/lib/mock-data'; // Removed - Mock data deleted
 import { ArrowLeft, User, Building, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { OwnerSelector } from '@/components/shared/owner-selector';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
 
 // Lead sources array (moved from mock-data)
 const leadSources = [
@@ -52,6 +54,10 @@ export function NewLeadForm() {
         estimatedStudents: '',
         proposedCommission: '',
     });
+
+    const [ownerType, setOwnerType] = useState('');
+    const [ownerId, setOwnerId] = useState('');
+    const { user: currentUser } = useCurrentUser();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,7 +114,9 @@ export function NewLeadForm() {
                 type: leadType,
                 source: formData.source,
                 notes: formData.notes,
-                documents: uploadedDocs, // Send uploaded docs
+                documents: uploadedDocs,
+                // Owner assignment
+                ...(ownerType && ownerId ? { ownerType, ownerId } : {}),
                 ...(leadType === 'Student' ? {
                     fullName: formData.fullName,
                     email: formData.email,
@@ -143,7 +151,8 @@ export function NewLeadForm() {
             }
 
             const data = await response.json();
-            alert(`Lead created successfully! Lead ID: ${data.lead.leadId}`);
+            // data may be the lead directly OR wrapped in { lead: ... }
+            const leadId = data?.lead?.id ?? data?.lead?.leadId ?? data?.id ?? data?.leadId ?? '';
             router.push('/leads');
         } catch (error: any) {
             console.error(error);
@@ -512,6 +521,19 @@ export function NewLeadForm() {
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                     placeholder="Additional notes about this lead..."
                                     rows={4}
+                                />
+                            </div>
+
+                            {/* Owner Selector */}
+                            <div className="mt-4 pt-4 border-t">
+                                <h3 className="font-semibold text-base mb-3">Record Owner</h3>
+                                <OwnerSelector
+                                    ownerType={ownerType}
+                                    ownerId={ownerId}
+                                    onOwnerTypeChange={setOwnerType}
+                                    onOwnerIdChange={setOwnerId}
+                                    required
+                                    initialUserId={currentUser?.id}
                                 />
                             </div>
                         </div>

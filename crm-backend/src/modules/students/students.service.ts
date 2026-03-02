@@ -11,11 +11,32 @@ export class StudentsService {
         private timeline: TimelineService,
     ) { }
 
-    async findAll(page: number = 1, pageSize: number = 10, search: string = '') {
+    /**
+     * Batch-resolve nationality IDs to country names in a single DB query.
+     * This prevents the N+1 problem where we'd query the DB once per student.
+     */
+    private async batchResolveNationalities(nationalityIds: (string | null | undefined)[]): Promise<Map<string, string>> {
+        const uniqueIds = [...new Set(nationalityIds.filter(Boolean))] as string[];
+        if (uniqueIds.length === 0) return new Map();
+
+        const countries = await this.prisma.country.findMany({
+            where: { id: { in: uniqueIds } },
+            select: { id: true, name: true },
+        });
+
+        return new Map(countries.map((c) => [c.id, c.name]));
+    }
+
+    async findAll(page: number = 1, pageSize: number = 10, search: string = '', ownerFilter?: string) {
         const skip = (page - 1) * pageSize;
         const take = pageSize;
 
         const where: any = {};
+
+        // 🔒 View Own: restrict records to those owned by this user
+        if (ownerFilter) {
+            where.ownerId = ownerFilter;
+        }
 
         if (search) {
             where.OR = [
@@ -28,32 +49,75 @@ export class StudentsService {
             ];
         }
 
+
         const [students, total] = await Promise.all([
             this.prisma.student.findMany({
                 where,
                 skip: Number(skip),
                 take: Number(take),
-                include: {
-                    agent: true,
+                select: {
+                    id: true,
+                    studentId: true,
+                    firstName: true,
+                    lastName: true,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                    mobile: true,
+                    nationality: true,
+                    passportNumber: true,
+                    photoUrl: true,
+                    status: true,
+                    isActive: true,
+                    tags: true,
+                    agentId: true,
+                    assignedTo: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    agent: {
+                        select: {
+                            id: true,
+                            companyName: true,
+                            contactPerson: true,
+                            email: true,
+                        },
+                    },
                     applications: {
-                        include: {
+                        select: {
+                            id: true,
+                            applicationName: true,
+                            stage: true,
+                            status: true,
+                            createdAt: true,
                             program: {
-                                include: {
-                                    faculty: true,
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    officialTuition: true,
+                                    tuitionCurrency: true,
+                                    faculty: { select: { id: true, name: true } },
                                 },
                             },
                         },
                     },
                 },
-                orderBy: {
-                    createdAt: 'desc',
-                },
+                orderBy: { createdAt: 'desc' },
             }),
             this.prisma.student.count({ where }),
         ]);
 
+        // Batch-resolve all nationalities in a single DB query (fixes N+1 problem)
+        const nationalityMap = await this.batchResolveNationalities(students.map((s) => s.nationality));
+
+        const studentsWithNames = students.map((student) => ({
+            ...student,
+            nationalityName: student.nationality
+                ? (nationalityMap.get(student.nationality) ?? student.nationality)
+                : null,
+        }));
+
         return {
-            students,
+            students: studentsWithNames,
             total,
             page: Number(page),
             pageSize: Number(pageSize),
@@ -73,6 +137,8 @@ export class StudentsService {
                                 faculty: true,
                             },
                         },
+                        academicYear: true,
+                        semester: true,
                     },
                 },
                 studentDocuments: true,
@@ -88,7 +154,16 @@ export class StudentsService {
             throw new NotFoundException(`Student with ID ${id} not found`);
         }
 
-        return student;
+        // Resolve nationality ID to country name
+        const nationalityMap = await this.batchResolveNationalities([student.nationality]);
+        const nationalityName = student.nationality
+            ? (nationalityMap.get(student.nationality) ?? student.nationality)
+            : null;
+
+        return {
+            ...student,
+            nationalityName,
+        };
     }
 
     async create(createStudentDto: CreateStudentDto) {
@@ -133,12 +208,37 @@ export class StudentsService {
                 data: {
                     ...sanitizedData,
                     studentId,
-                    // Store documents as JSON in the documents field
+                    // Store documents as JSON in the documents field (legacy)
                     documents: documents || [],
                 },
             });
 
             console.log('✅ Student created successfully:', student.id);
+
+            // 🎯 Create proper Document records in the Document table
+            // so they appear in the studentDocuments relation
+            if (documents && documents.length > 0) {
+                for (const doc of documents) {
+                    try {
+                        await this.prisma.document.create({
+                            data: {
+                                studentId: student.id,
+                                fileName: doc.fileName || doc.type,
+                                fileType: doc.type,
+                                fileUrl: doc.fileUrl,
+                                fileSize: doc.fileSize || 0,
+                                metadata: {
+                                    uploadedDuring: 'student_creation',
+                                },
+                            },
+                        });
+                    } catch (docError) {
+                        console.error(`⚠️ Failed to create Document record for ${doc.fileName}:`, docError);
+                        // Don't fail the entire creation if one document record fails
+                    }
+                }
+                console.log(`📎 Created ${documents.length} document records for student ${student.id}`);
+            }
 
             // 🎯 Timeline event
             await this.timeline.createEvent({
@@ -178,9 +278,22 @@ export class StudentsService {
         // Check if student exists
         await this.findOne(id);
 
+        // Sanitize data: convert empty strings to undefined/null
+        const sanitizedData = Object.entries(updateStudentDto).reduce((acc, [key, value]) => {
+            if (value === '' || value === null) {
+                acc[key] = null; // Use null to unset the field in DB
+            } else {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as any);
+
+        // If documents are present, handle them (omitted for now as specific logic might be needed)
+        // For now just pass everything else
+
         return this.prisma.student.update({
             where: { id },
-            data: updateStudentDto,
+            data: sanitizedData,
         });
     }
 

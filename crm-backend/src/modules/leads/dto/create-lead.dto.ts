@@ -66,6 +66,14 @@ export class CreateLeadDto {
     @IsOptional()
     assignedTo?: string;
 
+    @IsString()
+    @IsOptional()
+    ownerId?: string;  // User ID (Direct) or Agent ID (Agent)
+
+    @IsString()
+    @IsOptional()
+    ownerType?: string;  // 'Direct' | 'Agent'
+
     @IsOptional()
     @IsArray()
     documents?: Array<{

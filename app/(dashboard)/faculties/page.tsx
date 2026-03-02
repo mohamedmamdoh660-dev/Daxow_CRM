@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card';
 import { FacultiesTable } from '@/components/faculties/faculties-table';
 import { FacultyFormDialog } from '@/components/faculties/faculty-form-dialog';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function FacultiesPage() {
+    const { canAdd } = usePermissions('Faculties');
     const [faculties, setFaculties] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
@@ -65,10 +67,12 @@ export default function FacultiesPage() {
                             >
                                 <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                             </Button>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Faculty
-                            </Button>
+                            {canAdd && (
+                                <Button onClick={() => setIsAddDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Faculty
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>

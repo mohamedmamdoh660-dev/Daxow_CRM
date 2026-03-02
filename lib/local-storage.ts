@@ -56,8 +56,9 @@ export async function uploadToLocal(
         // Write file to disk
         await writeFile(filePath, buffer);
 
-        // Generate public URL (relative to /public)
-        const publicUrl = `/uploads/${folder}/${filename}`;
+        // Generate public URL via the API route
+        // (Next.js standalone mode doesn't serve runtime-written files from /public/)
+        const publicUrl = `/api/uploads/${folder}/${filename}`;
 
         return {
             url: publicUrl,

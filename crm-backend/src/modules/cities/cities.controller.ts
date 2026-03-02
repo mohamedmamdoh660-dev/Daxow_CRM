@@ -9,18 +9,25 @@ import {
     Query,
     ParseIntPipe,
     DefaultValuePipe,
+    UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { CitiesService } from './cities.service';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Cities')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('cities')
 export class CitiesController {
     constructor(private readonly citiesService: CitiesService) { }
 
     @Post()
+    @RequirePermissions({ module: 'Countries & Cities', action: 'add' })
     @ApiOperation({ summary: 'Create a new city' })
     @ApiResponse({ status: 201, description: 'City created successfully' })
     create(@Body() createCityDto: CreateCityDto) {
@@ -28,6 +35,7 @@ export class CitiesController {
     }
 
     @Get()
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
     @ApiOperation({ summary: 'Get all cities' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -53,6 +61,7 @@ export class CitiesController {
     }
 
     @Get(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
     @ApiOperation({ summary: 'Get city by ID' })
     @ApiResponse({ status: 200, description: 'City found' })
     @ApiResponse({ status: 404, description: 'City not found' })
@@ -61,6 +70,7 @@ export class CitiesController {
     }
 
     @Patch(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'edit' })
     @ApiOperation({ summary: 'Update city' })
     @ApiResponse({ status: 200, description: 'City updated successfully' })
     @ApiResponse({ status: 404, description: 'City not found' })
@@ -69,6 +79,7 @@ export class CitiesController {
     }
 
     @Delete(':id')
+    @RequirePermissions({ module: 'Countries & Cities', action: 'delete' })
     @ApiOperation({ summary: 'Delete city' })
     @ApiResponse({ status: 200, description: 'City deleted successfully' })
     @ApiResponse({ status: 404, description: 'City not found' })

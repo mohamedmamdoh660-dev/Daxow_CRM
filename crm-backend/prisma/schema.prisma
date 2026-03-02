@@ -34,51 +34,53 @@ model FieldDefinition {
 }
 
 model Country {
-  id                    String   @id @default(cuid())
-  name                  String   @unique
-  code                  String   @unique
+  id                    String    @id @default(cuid())
+  name                  String    @unique
+  code                  String    @unique
   phoneCode             String?
-  region                String   @default("Other")
-  activeOnNationalities Boolean  @default(true)
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  region                String    @default("Other")
+  activeOnNationalities Boolean   @default(true)
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
   cities                City[]
+  programs              Program[]
 
   @@index([code])
   @@index([activeOnNationalities])
-  programs Program[]
 }
 
 model City {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   countryId String
-  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  country   Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  programs  Program[]
 
   @@index([countryId])
-  programs  Program[]
 }
 
 model AcademicYear {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  isDefault Boolean    @default(false)
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String        @id @default(cuid())
+  name         String        @unique
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
 }
 
 model Semester {
-  id        String   @id @default(cuid())
-  name      String
-  isDefault Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(cuid())
+  name         String
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
 }
 
 model Faculty {
@@ -87,58 +89,57 @@ model Faculty {
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  specialties Specialty[]
   programs    Program[]
+  specialties Specialty[]
 }
 
 model Title {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-}
-
-model Specialty {
-  id        String         @id @default(cuid())
-  name      String         @unique
-  facultyId String
-  faculty   Faculty        @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  isActive  Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  @@index([facultyId])
-  programs  Program[]
-}
-
-model Language {
   id        String   @id @default(cuid())
   name      String   @unique
-  code      String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Specialty {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  facultyId String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  programs  Program[]
+  faculty   Faculty   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+  @@index([facultyId])
+}
+
+model Language {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  code      String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   programs  Program[]
 }
 
 model Degree {
-  id           String   @id @default(cuid())
-  name         String   @unique
+  id           String        @id @default(cuid())
+  name         String        @unique
   code         String?
-  displayOrder Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  displayOrder Int           @default(0)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
+  programs     Program[]
 
   @@index([isActive, displayOrder])
-  programs     Program[]
 }
 
 model Program {
-  id                 String   @id @default(cuid())
-  
-  // Relations
+  id                 String        @id @default(cuid())
   facultyId          String
   specialtyId        String
   degreeId           String
@@ -146,65 +147,50 @@ model Program {
   countryId          String?
   cityId             String?
   userId             String?
-
-  // Basic Info
   name               String
-  isActive           Boolean  @default(false)
-  activeApplications Boolean  @default(false)
+  isActive           Boolean       @default(false)
+  activeApplications Boolean       @default(false)
   studyYears         String?
-
-  // Financials
-  officialTuition    Decimal? @db.Decimal(10, 2)
-  discountedTuition  Decimal? @db.Decimal(10, 2)
-  tuitionCurrency    String?  @default("USD")
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // Relations
-  faculty            Faculty   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  specialty          Specialty @relation(fields: [specialtyId], references: [id])
-  degree             Degree    @relation(fields: [degreeId], references: [id])
-  languageRel        Language  @relation(fields: [languageId], references: [id])
-  country            Country?  @relation(fields: [countryId], references: [id])
-  city               City?     @relation(fields: [cityId], references: [id])
-  user               User?      @relation(fields: [userId], references: [id])
-
+  officialTuition    Decimal?      @db.Decimal(10, 2)
+  discountedTuition  Decimal?      @db.Decimal(10, 2)
+  tuitionCurrency    String?       @default("USD")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
   applications       Application[]
-
-  @@index([facultyId])
-  @@index([specialtyId])
-  @@index([degreeId])
-  @@index([languageId])
-  @@index([countryId])
-  @@index([cityId])
-  @@index([userId])
+  city               City?         @relation(fields: [cityId], references: [id])
+  country            Country?      @relation(fields: [countryId], references: [id])
+  degree             Degree        @relation(fields: [degreeId], references: [id])
+  faculty            Faculty       @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  languageRel        Language      @relation(fields: [languageId], references: [id])
+  specialty          Specialty     @relation(fields: [specialtyId], references: [id])
+  user               User?         @relation(fields: [userId], references: [id])
 }
 
 model Agent {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   companyName    String
   contactPerson  String?
-  email          String?   @unique
+  email          String?       @unique
   phone          String?
-  commissionRate Decimal?  @db.Decimal(5, 2)
+  commissionRate Decimal?      @db.Decimal(5, 2)
   country        String?
   city           String?
   address        String?
-  metadata       Json      @default("{}")
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  metadata       Json          @default("{}")
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  applications   Application[] @relation("AgencyApplications")
   students       Student[]
   users          User[]
-  
+
   @@index([email])
   @@index([country])
 }
 
 model Student {
   id                 String          @id @default(cuid())
-  studentId          String?         @unique  // STU-0001, STU-0002, etc.
+  studentId          String?         @unique
   transferStudent    Boolean         @default(false)
   haveTc             Boolean?
   tcNumber           String?
@@ -247,6 +233,8 @@ model Student {
   documents          Json            @default("[]")
   agentId            String?
   assignedTo         String?
+  ownerId            String?   // ID of owning User (Direct) or Agent (Agent)
+  ownerType          String?   // 'Direct' | 'Agent'
   status             String          @default("Applicant")
   tags               String[]        @default([])
   metadata           Json            @default("{}")
@@ -262,37 +250,47 @@ model Student {
   @@index([agentId])
   @@index([passportNumber])
   @@index([assignedTo])
+  @@index([ownerId])
   @@index([nationality])
   @@index([educationLevelId])
 }
 
 model Application {
   id              String          @id @default(cuid())
+  applicationName String?
   studentId       String
   programId       String
+  academicYearId  String
+  semesterId      String
+  degreeId        String
+  agentId         String?
+  agencyId        String?
+  ownerId         String?   // ID of owning User (Direct) or Agent (Agent)
+  ownerType       String?   // 'Direct' | 'Agent'
+  stage           String          @default("Draft")
   status          String          @default("New")
-  priority        String          @default("Medium")
-  applicationDate DateTime        @default(now())
-  expectedIntake  String?
-  estimatedValue  Decimal?        @db.Decimal(10, 2)
-  assignedTo      String?
-  tags            String[]        @default([])
-  stageHistory    Json            @default("[]")
-  metadata        Json            @default("{}")
   notes           String?
+  metadata        Json            @default("{}")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  academicYear    AcademicYear    @relation(fields: [academicYearId], references: [id])
+  agency          Agent?          @relation("AgencyApplications", fields: [agencyId], references: [id])
+  agent           User?           @relation("AgentApplications", fields: [agentId], references: [id])
+  degree          Degree          @relation(fields: [degreeId], references: [id])
   program         Program         @relation(fields: [programId], references: [id])
+  semester        Semester        @relation(fields: [semesterId], references: [id])
   student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
   documents       Document[]
   tasks           Task[]
   timeline        TimelineEvent[]
 
+  @@unique([studentId, programId, academicYearId], name: "unique_application_per_intake")
   @@index([studentId])
   @@index([programId])
-  @@index([status])
-  @@index([assignedTo])
-  @@index([applicationDate])
+  @@index([stage])
+  @@index([agentId])
+  @@index([agencyId])
+  @@index([ownerId])
 }
 
 model Stage {
@@ -321,8 +319,8 @@ model Document {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  student       Student?     @relation("StudentToDocument", fields: [studentId], references: [id], onDelete: Cascade)
   lead          Lead?        @relation("LeadToDocument", fields: [leadId], references: [id], onDelete: Cascade)
+  student       Student?     @relation("StudentToDocument", fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
   @@index([studentId])
@@ -339,13 +337,13 @@ model TimelineEvent {
   leadId        String?
   eventType     String
   title         String
-  description   String       @db.Text
+  description   String
   metadata      Json         @default("{}")
   performedBy   String?
   createdAt     DateTime     @default(now())
   application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  student       Student?     @relation(fields: [studentId], references: [id], onDelete: Cascade)
   lead          Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  student       Student?     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
   @@index([studentId])
@@ -413,32 +411,70 @@ model AutomationRule {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  password     String
-  name         String
-  firstName    String?
-  lastName     String?
-  phone        String?
-  profileImage String?
-  role         String    @default("staff")
-  avatar       String?
-  isActive     Boolean   @default(true)
-  lastLogin    DateTime?
-  metadata     Json      @default("{}")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  programs     Program[]
-  
-  // Agent/Sub-Agent fields
-  agencyId       String?
-  commissionRate Decimal?  @db.Decimal(5, 2)
-  agency         Agent?    @relation(fields: [agencyId], references: [id])
+  id                String        @id @default(cuid())
+  email             String        @unique
+  password          String
+  name              String
+  firstName         String?
+  lastName          String?
+  phone             String?
+  profileImage      String?
+  avatar            String?
+  isActive          Boolean       @default(true)
+  lastLogin         DateTime?
+  metadata          Json          @default("{}")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  agencyId          String?
+  commissionRate    Decimal?      @db.Decimal(5, 2)
+  agentApplications Application[] @relation("AgentApplications")
+  programs          Program[]
+  agency            Agent?        @relation(fields: [agencyId], references: [id])
+  groups            UserGroup[]   // Many-to-many: user can belong to multiple groups
 
   @@index([email])
-  @@index([role])
 }
+
+
+model Role {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  isSystem    Boolean     @default(false)
+
+  userGroups  UserGroup[]
+  permissions Permission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Junction table: User belongs to many Groups, Group has many Users
+model UserGroup {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  roleId String
+  module String // e.g., "Students", "Applications"
+  action String // "view" | "add" | "edit" | "delete" | "export" | "import"
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module, action])
+  @@index([roleId])
+}
+
 
 model Setting {
   id        String   @id @default(cuid())
@@ -453,46 +489,41 @@ model Setting {
 }
 
 model Lead {
-  id                    String          @id @default(cuid())
-  leadId                String?         @unique  // LEAD-0001, LEAD-0002, etc.
-  type                  String          // "Student" or "Agent"
-  status                String          @default("New")
-  source                String?
-  
-  // Student Lead fields
-  fullName              String?
-  email                 String?
-  phone                 String?
-  country               String?
-  preferredIntake       String?
-  preferredCountries    String[]        @default([])
-  budgetRange           String?
-  
-  // Agent Lead fields
-  companyName           String?
-  contactPerson         String?
-  city                  String?
-  estimatedStudents     Int?
-  proposedCommission    Decimal?        @db.Decimal(5, 2)
-  
-  // Common fields
-  notes                 String?         @db.Text
-  assignedTo            String?
-  convertedToStudentId  String?
-  convertedToAgentId    String?
-  metadata              Json            @default("{}")
-  isActive              Boolean         @default(true)
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  
-  // Relations
-  leadDocuments         Document[]      @relation("LeadToDocument")
-  timeline              TimelineEvent[]
-  
+  id                   String          @id @default(cuid())
+  leadId               String?         @unique
+  type                 String
+  status               String          @default("New")
+  source               String?
+  fullName             String?
+  email                String?
+  phone                String?
+  country              String?
+  preferredIntake      String?
+  preferredCountries   String[]        @default([])
+  budgetRange          String?
+  companyName          String?
+  contactPerson        String?
+  city                 String?
+  estimatedStudents    Int?
+  proposedCommission   Decimal?        @db.Decimal(5, 2)
+  notes                String?
+  assignedTo           String?
+  ownerId              String?   // ID of owning User (Direct) or Agent (Agent)
+  ownerType            String?   // 'Direct' | 'Agent'
+  convertedToStudentId String?
+  convertedToAgentId   String?
+  metadata             Json            @default("{}")
+  isActive             Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  leadDocuments        Document[]      @relation("LeadToDocument")
+  timeline             TimelineEvent[]
+
   @@index([type])
   @@index([status])
   @@index([email])
   @@index([assignedTo])
+  @@index([ownerId])
   @@index([convertedToStudentId])
   @@index([createdAt])
 }

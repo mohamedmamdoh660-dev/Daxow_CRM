@@ -21,8 +21,8 @@ async function bootstrap() {
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: true,         // Strip unknown fields silently
+      // forbidNonWhitelisted removed — was throwing 400 on any unrecognized field
       transform: true,
     }),
   );

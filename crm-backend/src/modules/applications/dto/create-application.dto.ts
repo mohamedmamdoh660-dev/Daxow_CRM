@@ -1,5 +1,4 @@
-import { IsString, IsOptional, IsDateString, IsEnum, IsNumber, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
 
 export class CreateApplicationDto {
     @IsString()
@@ -9,41 +8,46 @@ export class CreateApplicationDto {
     programId: string;
 
     @IsString()
+    academicYearId: string;
+
+    @IsString()
+    semesterId: string;
+
+    @IsString()
+    degreeId: string;
+
+    @IsString()
+    @IsOptional()
+    applicationName?: string;
+
+    @IsString()
+    @IsOptional()
+    agentId?: string;
+
+    @IsString()
+    @IsOptional()
+    agencyId?: string;
+
+    @IsEnum(['Draft', 'Submitted', 'Under Review', 'Conditional Acceptance', 'Final Acceptance', 'Rejected', 'Enrolled', 'Cancelled'])
+    @IsOptional()
+    stage?: string;
+
+    @IsString()
     @IsOptional()
     status?: string;
-
-    @IsEnum(['Low', 'Medium', 'High'])
-    @IsOptional()
-    priority?: string;
-
-    @IsDateString()
-    @IsOptional()
-    applicationDate?: string;
-
-    @IsString()
-    @IsOptional()
-    expectedIntake?: string;
-
-    @IsNumber()
-    @IsOptional()
-    @Type(() => Number)
-    estimatedValue?: number;
-
-    @IsString()
-    @IsOptional()
-    assignedTo?: string;
-
-    @IsArray()
-    @IsOptional()
-    tags?: string[];
-
-    @IsOptional()
-    stageHistory?: any;
-
-    @IsOptional()
-    metadata?: any;
 
     @IsString()
     @IsOptional()
     notes?: string;
+
+    @IsString()
+    @IsOptional()
+    ownerId?: string;  // User ID (Direct) or Agent ID (Agent)
+
+    @IsString()
+    @IsOptional()
+    ownerType?: string;  // 'Direct' | 'Agent'
+
+    @IsOptional()
+    metadata?: any;
 }

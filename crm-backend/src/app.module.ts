@@ -22,7 +22,10 @@ import { DegreesModule } from './modules/degrees/degrees.module';
 import { AgentsModule } from './modules/agents/agents.module';
 
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { APP_GUARD } from '@nestjs/core';
+
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -66,6 +69,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ProgramsModule,
     DegreesModule,
     AgentsModule,
+    UsersModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [

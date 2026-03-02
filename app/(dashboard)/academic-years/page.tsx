@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card';
 import { AcademicYearsTable } from '@/components/academic-years/academic-years-table';
 import { AddAcademicYearDialog } from '@/components/academic-years/add-academic-year-dialog';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function AcademicYearsPage() {
+    const { canAdd } = usePermissions('Academic Years');
     const [academicYears, setAcademicYears] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
@@ -65,10 +67,12 @@ export default function AcademicYearsPage() {
                             >
                                 <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                             </Button>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Academic Year
-                            </Button>
+                            {canAdd && (
+                                <Button onClick={() => setIsAddDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Academic Year
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>

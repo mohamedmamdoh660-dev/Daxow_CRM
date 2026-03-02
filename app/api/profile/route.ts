@@ -21,7 +21,7 @@ async function getUserFromToken(request: NextRequest) {
 
     try {
         const decoded = jwt.verify(token.value, JWT_SECRET) as JWTPayload;
-        return await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: decoded.sub },
             select: {
                 id: true,
@@ -29,12 +29,15 @@ async function getUserFromToken(request: NextRequest) {
                 firstName: true,
                 lastName: true,
                 phone: true,
-                role: true,
+                role: { select: { name: true } },
                 profileImage: true,
                 createdAt: true,
                 lastLogin: true,
             },
         });
+        if (!user) return null;
+        // Flatten role object to string for backward compatibility
+        return { ...user, role: user.role?.name || 'staff' };
     } catch (error) {
         return null;
     }
@@ -103,14 +106,15 @@ export async function PATCH(request: NextRequest) {
                 firstName: true,
                 lastName: true,
                 phone: true,
-                role: true,
+                role: { select: { name: true } },
                 profileImage: true,
                 createdAt: true,
                 lastLogin: true,
             },
         });
 
-        return NextResponse.json(updatedUser);
+        // Flatten role object to string
+        return NextResponse.json({ ...updatedUser, role: (updatedUser.role as any)?.name || 'staff' });
     } catch (error) {
         console.error('Error updating profile:', error);
         return NextResponse.json(

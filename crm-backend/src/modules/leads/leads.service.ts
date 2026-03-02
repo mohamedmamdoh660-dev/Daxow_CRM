@@ -11,11 +11,16 @@ export class LeadsService {
         private timeline: TimelineService,
     ) { }
 
-    async findAll(page: number = 1, pageSize: number = 10, search: string = '') {
+    async findAll(page: number = 1, pageSize: number = 10, search: string = '', ownerFilter?: string) {
         const skip = (page - 1) * pageSize;
         const take = pageSize;
 
         const where: any = {};
+
+        // 🔒 View Own: restrict to records owned by this user
+        if (ownerFilter) {
+            where.ownerId = ownerFilter;
+        }
 
         if (search) {
             where.OR = [
@@ -26,6 +31,7 @@ export class LeadsService {
                 { leadId: { contains: search, mode: 'insensitive' } },
             ];
         }
+
 
         const [leads, total] = await Promise.all([
             this.prisma.lead.findMany({

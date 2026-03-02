@@ -541,6 +541,48 @@ async function main() {
         },
     });
 
+    // Create academic years
+    console.log('Creating academic years...');
+    const academicYears = await Promise.all([
+        prisma.academicYear.upsert({
+            where: { name: '2024-2025' },
+            update: {},
+            create: { name: '2024-2025', isDefault: false, isActive: true },
+        }),
+        prisma.academicYear.upsert({
+            where: { name: '2025-2026' },
+            update: {},
+            create: { name: '2025-2026', isDefault: true, isActive: true },
+        }),
+        prisma.academicYear.upsert({
+            where: { name: '2026-2027' },
+            update: {},
+            create: { name: '2026-2027', isDefault: false, isActive: true },
+        }),
+    ]);
+    console.log(`✅ Created ${academicYears.length} academic years`);
+
+    // Create semesters
+    console.log('Creating semesters...');
+    const semesters = await Promise.all([
+        prisma.semester.upsert({
+            where: { id: 'fall-semester' },
+            update: {},
+            create: { id: 'fall-semester', name: 'Fall', isDefault: true, isActive: true },
+        }),
+        prisma.semester.upsert({
+            where: { id: 'spring-semester' },
+            update: {},
+            create: { id: 'spring-semester', name: 'Spring', isDefault: false, isActive: true },
+        }),
+        prisma.semester.upsert({
+            where: { id: 'summer-semester' },
+            update: {},
+            create: { id: 'summer-semester', name: 'Summer', isDefault: false, isActive: true },
+        }),
+    ]);
+    console.log(`✅ Created ${semesters.length} semesters`);
+
     // Create sample programs
     console.log('Creating sample programs...');
     const programs = await Promise.all([
@@ -589,21 +631,22 @@ async function main() {
 
     console.log(`✅ Created sample agent`);
 
-    // Create default admin user
+    // Create default admin user (mohamed@daxow.com / Mohmed@010)
     console.log('Creating admin user...');
     const adminUser = await prisma.user.upsert({
-        where: { email: 'admin@admission-crm.com' },
+        where: { email: 'mohamed@daxow.com' },
         update: {},
         create: {
-            email: 'admin@admission-crm.com',
-            password: '$2a$10$YourHashedPasswordHere', // In production, use bcrypt.hash('password', 10)
-            name: 'Admin User',
-            role: 'admin',
+            email: 'mohamed@daxow.com',
+            password: '$2b$10$sg2vcxOKNzbpD67lkFZTnOB2QrN405x6UuMoCHt1TxvfUFTzpLACS',
+            name: 'Mohamed Admin',
+            firstName: 'Mohamed',
+            lastName: 'Admin',
             metadata: {},
         },
     });
 
-    console.log(`✅ Created admin user`);
+    console.log(`✅ Created admin user: ${adminUser.email}`);
 
     console.log('\n🎉 Database seeding completed successfully!');
     console.log('\n📊 Summary:');

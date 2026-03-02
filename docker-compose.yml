@@ -37,9 +37,12 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+      - INTERNAL_BACKEND_URL=http://backend:3001
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - NODE_ENV=production
+    volumes:
+      - crm_uploads:/app/public/uploads
     depends_on:
       - backend
     networks:
@@ -48,3 +51,7 @@ services:
 networks:
   daxow_crm_network:
     driver: bridge
+
+volumes:
+  crm_uploads:
+    driver: local

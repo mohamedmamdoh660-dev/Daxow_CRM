@@ -9,19 +9,26 @@ import {
     Query,
     ParseIntPipe,
     DefaultValuePipe,
+    UseGuards,
 } from '@nestjs/common';
 import { User } from '../../common/decorators/user.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { SemestersService } from './semesters.service';
 import { CreateSemesterDto } from './dto/create-semester.dto';
 import { UpdateSemesterDto } from './dto/update-semester.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Semesters')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('semesters')
 export class SemestersController {
     constructor(private readonly semestersService: SemestersService) { }
 
     @Post()
+    @RequirePermissions({ module: 'Academic Years', action: 'add' })
     @ApiOperation({ summary: 'Create a new semester' })
     @ApiResponse({ status: 201, description: 'Semester created successfully' })
     create(
@@ -32,6 +39,7 @@ export class SemestersController {
     }
 
     @Get()
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
     @ApiOperation({ summary: 'Get all semesters' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -54,6 +62,7 @@ export class SemestersController {
     }
 
     @Get(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
     @ApiOperation({ summary: 'Get semester by ID' })
     @ApiResponse({ status: 200, description: 'Semester found' })
     @ApiResponse({ status: 404, description: 'Semester not found' })
@@ -62,6 +71,7 @@ export class SemestersController {
     }
 
     @Patch(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'edit' })
     @ApiOperation({ summary: 'Update semester' })
     @ApiResponse({ status: 200, description: 'Semester updated successfully' })
     @ApiResponse({ status: 404, description: 'Semester not found' })
@@ -74,6 +84,7 @@ export class SemestersController {
     }
 
     @Delete(':id')
+    @RequirePermissions({ module: 'Academic Years', action: 'delete' })
     @ApiOperation({ summary: 'Delete semester' })
     @ApiResponse({ status: 200, description: 'Semester deleted successfully' })
     @ApiResponse({ status: 404, description: 'Semester not found' })

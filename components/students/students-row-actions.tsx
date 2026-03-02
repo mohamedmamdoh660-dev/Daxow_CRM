@@ -27,11 +27,15 @@ import {
 interface StudentsRowActionsProps {
     student: any;
     onRefresh: () => void;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export function StudentsRowActions({
     student,
     onRefresh,
+    canEdit = true,
+    canDelete = true,
 }: StudentsRowActionsProps) {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -107,33 +111,41 @@ export function StudentsRowActions({
                             View Details
                         </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href={`/students/${student.id}/edit`} className="flex items-center cursor-pointer">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleToggleActive}>
-                        {student.isActive ? (
-                            <>
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Deactivate
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Activate
-                            </>
-                        )}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                    </DropdownMenuItem>
+                    {canEdit && (
+                        <>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/students/${student.id}/edit`} className="flex items-center cursor-pointer">
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleToggleActive}>
+                                {student.isActive ? (
+                                    <>
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Deactivate
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Activate
+                                    </>
+                                )}
+                            </DropdownMenuItem>
+                        </>
+                    )}
+                    {canDelete && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="text-destructive"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                        </>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 

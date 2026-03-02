@@ -1,15 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWizard } from './registration-wizard-context';
 import { ArrowLeft, ArrowRight, Edit, FileText, User, MapPin, Users, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { OwnerSelector } from '@/components/shared/owner-selector';
 
 export const RegistrationSummary: React.FC = () => {
-    const { formData, documents, nextStep, previousStep, goToStep } = useWizard();
+    const { formData, documents, nextStep, previousStep, goToStep, setFormData } = useWizard();
+    const [ownerType, setOwnerTypeState] = useState(formData.ownerType as string || '');
+    const [ownerId, setOwnerIdState] = useState(formData.ownerId as string || '');
+
+    const handleOwnerTypeChange = (type: string) => {
+        setOwnerTypeState(type);
+        setFormData({ ownerType: type as any, ownerId: '' as any });
+        setOwnerIdState('');
+    };
+
+    const handleOwnerIdChange = (id: string) => {
+        setOwnerIdState(id);
+        setFormData({ ownerId: id as any });
+    };
 
     const InfoRow = ({ label, value }: { label: string; value?: string | null }) => {
         if (!value) return null;
@@ -202,6 +216,27 @@ export const RegistrationSummary: React.FC = () => {
                 </CardContent>
             </Card>
 
+            {/* Owner Assignment */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        <CardTitle>Record Owner</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Assign this student to a user or agent (optional). Used for "View Own" access control.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <OwnerSelector
+                        ownerType={ownerType}
+                        ownerId={ownerId}
+                        onOwnerTypeChange={handleOwnerTypeChange}
+                        onOwnerIdChange={handleOwnerIdChange}
+                    />
+                </CardContent>
+            </Card>
+
             {/* Navigation Buttons */}
             <div className="flex justify-between">
                 <Button type="button" variant="outline" onClick={previousStep}>
@@ -209,7 +244,7 @@ export const RegistrationSummary: React.FC = () => {
                     Previous
                 </Button>
                 <Button type="button" onClick={nextStep}>
-                    Confirm & Submit
+                    Confirm &amp; Submit
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
