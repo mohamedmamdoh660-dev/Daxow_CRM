@@ -27,7 +27,18 @@ export class StudentsService {
         return new Map(countries.map((c) => [c.id, c.name]));
     }
 
-    async findAll(page: number = 1, pageSize: number = 10, search: string = '', ownerFilter?: string) {
+    async findAll(
+        page: number = 1,
+        pageSize: number = 10,
+        search: string = '',
+        ownerFilter?: string,
+        filters?: {
+            status?: string;
+            isActive?: boolean;
+            agentId?: string;
+            nationality?: string;
+        },
+    ) {
         const skip = (page - 1) * pageSize;
         const take = pageSize;
 
@@ -49,6 +60,11 @@ export class StudentsService {
             ];
         }
 
+        // Apply additional filters
+        if (filters?.status) where.status = filters.status;
+        if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+        if (filters?.agentId) where.agentId = filters.agentId;
+        if (filters?.nationality) where.nationality = filters.nationality;
 
         const [students, total] = await Promise.all([
             this.prisma.student.findMany({

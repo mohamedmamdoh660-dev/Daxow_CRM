@@ -2,6 +2,26 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-03] - Zoho-Style Filter Panel 🔍
+
+### Added — Shared Component
+- **`components/shared/filter-panel.tsx`**: New shared filter panel component with:
+  - Searchable filter fields inside the panel
+  - **System Filters** section (Active Records, Inactive Records, My Records)
+  - **Filter By Fields** section with collapsible groups and checkbox selection
+  - `FilterToggleButton` — toggle button with active filter badge count
+  - `ActiveFilterChips` — removable chip tags for active filters with a "Clear All" button
+
+### Updated — Students Module
+- **`app/(dashboard)/students/page.tsx`**: Integrated `FilterPanel` as a collapsible sidebar beside the students table. Filters (status, isActive, agentId, nationality) are passed as query params to the API.
+- **`crm-backend/src/modules/students/students.controller.ts`**: Added new query params: `status`, `isActive`, `agentId`, `nationality`.
+- **`crm-backend/src/modules/students/students.service.ts`**: Extended `findAll()` to apply optional filters in the Prisma `where` clause.
+
+### Updated — Applications Module
+- **`app/(dashboard)/applications/page.tsx`**: Integrated `FilterPanel` sidebar with Stage filter and System Filters. Replaced the old inline Stage `<Select>` dropdown. Search box moved into the table Card header alongside the Filter button.
+
+---
+
 ## [2026-02-28] - Owner Field for Students, Leads & Applications 👤
 
 ### Added — Database
