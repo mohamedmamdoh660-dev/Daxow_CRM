@@ -23,6 +23,7 @@ import {
 import { MoreHorizontal, Search, Plus, ExternalLink, Shield } from 'lucide-react';
 import { AgentProfile } from '@/types/agents';
 import Link from 'next/link';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 import { RegisterAgentDialog } from './register-agent-dialog';
 
@@ -33,6 +34,7 @@ interface AgentsTableProps {
 }
 
 export function AgentsTable({ data, onSearch }: AgentsTableProps) {
+    const { canAdd, canEdit } = usePermissions('Agents');
     const [searchQuery, setSearchQuery] = useState('');
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
@@ -55,10 +57,12 @@ export function AgentsTable({ data, onSearch }: AgentsTableProps) {
                     />
                 </div>
                 {/* Admin Action: Add New Agent manually if needed */}
-                <Button onClick={() => setIsRegisterOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Register New Agency
-                </Button>
+                {canAdd && (
+                    <Button onClick={() => setIsRegisterOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Register New Agency
+                    </Button>
+                )}
             </div>
 
             <RegisterAgentDialog
@@ -131,9 +135,11 @@ export function AgentsTable({ data, onSearch }: AgentsTableProps) {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem>View Staff</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-destructive">
-                                                    Deactivate Account
-                                                </DropdownMenuItem>
+                                                {canEdit && (
+                                                    <DropdownMenuItem className="text-destructive">
+                                                        Deactivate Account
+                                                    </DropdownMenuItem>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

@@ -2,6 +2,19 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-03] - Applications Module - Full RBAC Guards 🛡️
+
+### Fixed
+- **Applications list** (`applications/page.tsx`):
+  - "New Application" button: hidden unless `canAdd`
+  - Empty state "New Application" button: hidden unless `canAdd`
+  - Delete (🗑) button per row: hidden unless `canDelete`
+- **Application detail** (`applications/[id]/page.tsx`):
+  - Stage change dropdown: disabled (read-only) unless `canEdit`
+  - Notes "Edit" button: hidden unless `canEdit`
+  - Document upload card: hidden unless `canEdit`
+  - Document delete button in `DocumentCard`: hidden unless `canDelete`
+
 ## [2026-03-03] - RBAC Edit Button Guard + Default Owner 🔐
 
 ### Fixed

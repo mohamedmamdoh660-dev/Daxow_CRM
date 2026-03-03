@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { MoreHorizontal, Pencil, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,6 +35,7 @@ export function AcademicYearsRowActions({
     academicYear,
     onRefresh,
 }: AcademicYearsRowActionsProps) {
+    const { canEdit, canDelete } = usePermissions('Academic Years');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -109,21 +111,29 @@ export function AcademicYearsRowActions({
                             View Details
                         </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleToggleActive}>
-                        {academicYear.isActive ? 'Deactivate' : 'Activate'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                    </DropdownMenuItem>
+                    {canEdit && (
+                        <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                        </DropdownMenuItem>
+                    )}
+                    {canEdit && (
+                        <DropdownMenuItem onClick={handleToggleActive}>
+                            {academicYear.isActive ? 'Deactivate' : 'Activate'}
+                        </DropdownMenuItem>
+                    )}
+                    {canDelete && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="text-destructive"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                        </>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 

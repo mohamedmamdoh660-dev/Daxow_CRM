@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,6 +34,7 @@ export function LanguagesRowActions({
     language,
     onRefresh,
 }: LanguagesRowActionsProps) {
+    const { canEdit, canDelete } = usePermissions('Languages');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -96,22 +98,28 @@ export function LanguagesRowActions({
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleToggleActive}>
-                        <span className={language.isActive ? 'text-amber-600' : 'text-green-600'}>
-                            {language.isActive ? 'Deactivate' : 'Activate'}
-                        </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                    </DropdownMenuItem>
+                    {canEdit && (
+                        <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                        </DropdownMenuItem>
+                    )}
+                    {canEdit && (
+                        <DropdownMenuItem onClick={handleToggleActive}>
+                            <span className={language.isActive ? 'text-amber-600' : 'text-green-600'}>
+                                {language.isActive ? 'Deactivate' : 'Activate'}
+                            </span>
+                        </DropdownMenuItem>
+                    )}
+                    {canDelete && (
+                        <DropdownMenuItem
+                            onClick={() => setShowDeleteDialog(true)}
+                            className="text-destructive"
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                        </DropdownMenuItem>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 
