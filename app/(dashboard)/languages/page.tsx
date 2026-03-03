@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card';
 import { LanguagesTable } from '@/components/languages/languages-table';
 import { LanguageFormDialog } from '@/components/languages/language-form-dialog';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function LanguagesPage() {
+    const { canAdd } = usePermissions('Languages & Titles');
     const [languages, setLanguages] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
@@ -65,10 +67,12 @@ export default function LanguagesPage() {
                             >
                                 <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                             </Button>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Language
-                            </Button>
+                            {canAdd && (
+                                <Button onClick={() => setIsAddDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Language
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>

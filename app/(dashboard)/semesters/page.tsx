@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card';
 import { SemestersTable } from '@/components/semesters/semesters-table';
 import { AddSemesterDialog } from '@/components/semesters/add-semester-dialog';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function SemestersPage() {
+    const { canAdd } = usePermissions('Academic Years');
     const [semesters, setSemesters] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
@@ -65,10 +67,12 @@ export default function SemestersPage() {
                             >
                                 <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                             </Button>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Semester
-                            </Button>
+                            {canAdd && (
+                                <Button onClick={() => setIsAddDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Semester
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>

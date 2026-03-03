@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CitiesTable } from '@/components/cities/cities-table';
 import { CityDialog } from '@/components/cities/city-dialog';
 import { Separator } from '@/components/ui/separator';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     Select,
     SelectContent,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/select";
 
 export default function CitiesPage() {
+    const { canAdd } = usePermissions('Countries & Cities');
     const [cities, setCities] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -64,10 +66,12 @@ export default function CitiesPage() {
                         Manage supported cities and their countries.
                     </p>
                 </div>
-                <Button onClick={() => setShowAddDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add City
-                </Button>
+                {canAdd && (
+                    <Button onClick={() => setShowAddDialog(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add City
+                    </Button>
+                )}
             </div>
 
             <Separator />

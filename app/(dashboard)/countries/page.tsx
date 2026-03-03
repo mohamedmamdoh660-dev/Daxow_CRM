@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CountriesTable } from '@/components/countries/countries-table';
 import { CountryDialog } from '@/components/countries/country-dialog';
 import { Separator } from '@/components/ui/separator';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     Select,
     SelectContent,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/select";
 
 export default function CountriesPage() {
+    const { canAdd } = usePermissions('Countries & Cities');
     const [countries, setCountries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -64,10 +66,12 @@ export default function CountriesPage() {
                         Manage supported countries and their regions.
                     </p>
                 </div>
-                <Button onClick={() => setShowAddDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Country
-                </Button>
+                {canAdd && (
+                    <Button onClick={() => setShowAddDialog(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Country
+                    </Button>
+                )}
             </div>
 
             <Separator />

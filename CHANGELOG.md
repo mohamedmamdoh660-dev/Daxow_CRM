@@ -2,7 +2,27 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Fix Navigation Menu Visibility 🔧
+
+### Fixed
+- **Root cause identified:** Module names in sidebar, row-actions, and roles page were inconsistent with what the backend stores in permissions
+- **Backend module names** (source of truth): `Academic Years`, `Programs`, `Faculties`, `Countries & Cities`, `Languages & Titles`, `Agents`, `Leads`, `Students`, `Applications`, `Roles & Permissions`, `User Management`, `Settings`, `Profile`, `Dashboard`
+- **`sidebar.tsx`** — Fixed all module mappings to match backend:
+  - `Semesters` → grouped under `Academic Years`
+  - `Degrees` → grouped under `Programs`
+  - `Specialties` → grouped under `Faculties`
+  - `Countries` + `Cities` → grouped under `Countries & Cities`
+  - `Languages` + `Titles` → grouped under `Languages & Titles`
+- **Row-actions** — Updated 7 components to use correct parent module names:
+  - `semesters-row-actions` → `usePermissions('Academic Years')`
+  - `degrees-row-actions` → `usePermissions('Programs')`
+  - `specialties-row-actions` → `usePermissions('Faculties')`
+  - `countries-row-actions` + `cities-row-actions` → `usePermissions('Countries & Cities')`
+  - `languages-row-actions` + `titles-row-actions` → `usePermissions('Languages & Titles')`
+- **`roles/page.tsx` MODULES list** — Restored to 14 backend-consistent module names
+
 ## [2026-03-04] - Fix Academic Years RBAC + Roles Module List 🔧
+
 
 ### Fixed
 - **Roles page** (`roles/page.tsx`):

@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card';
 import { SpecialtiesTable } from '@/components/specialties/specialties-table';
 import { SpecialtyFormDialog } from '@/components/specialties/specialty-form-dialog';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function SpecialtiesPage() {
+    const { canAdd } = usePermissions('Faculties');
     const [specialties, setSpecialties] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
@@ -65,10 +67,12 @@ export default function SpecialtiesPage() {
                             >
                                 <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                             </Button>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Specialty
-                            </Button>
+                            {canAdd && (
+                                <Button onClick={() => setIsAddDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Specialty
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
