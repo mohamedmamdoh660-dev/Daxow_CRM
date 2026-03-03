@@ -39,6 +39,7 @@ import { EmailViewer } from '@/components/leads/email-viewer';
 import { AddTaskDialog } from '@/components/leads/add-task-dialog';
 import { UploadDocumentDialog } from '@/components/leads/upload-document-dialog';
 import { TaskViewDialog } from '@/components/leads/task-view-dialog';
+import { ModuleActionButtons } from '@/components/shared/module-action-buttons';
 
 const mockLeadStatuses = [
     { value: 'New', label: 'New', color: '#6366f1' },
@@ -236,7 +237,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                         </Select>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap justify-end">
+                    {/* Custom buttons — header position */}
+                    <ModuleActionButtons
+                        module="Leads"
+                        position="header"
+                        page="in_record"
+                        record={lead}
+                    />
                     <Button variant="outline" onClick={() => setIsEmailDialogOpen(true)}>
                         <Mail className="mr-2 h-4 w-4" />
                         Send Email
@@ -325,6 +333,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     fetchLead(); // Refresh lead data to show new document
                     setIsUploadDialogOpen(false);
                 }}
+            />
+
+            {/* Custom buttons — details position */}
+            <ModuleActionButtons
+                module="Leads"
+                position="details"
+                page="in_record"
+                record={lead}
             />
 
             {/* Main Content */}

@@ -159,6 +159,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
+            {/* Custom buttons — details position */}
+            <ModuleActionButtons
+                module="Students"
+                position="details"
+                page="in_record"
+                record={student}
+            />
+
             {/* Quick Stats */}
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
