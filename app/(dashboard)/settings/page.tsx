@@ -63,7 +63,7 @@ const SETTINGS_SECTIONS = [
         name: 'Customization',
         icon: Paintbrush,
         items: [
-            { name: 'Modules & Fields', href: '/settings/coming-soon' },
+            { name: 'Modules & Fields', href: '/settings/modules' },
             { name: 'Pipelines', href: '/settings/coming-soon' },
             { name: 'Statuses', href: '/settings/coming-soon' },
             { name: 'Templates', href: '/settings/coming-soon' },
