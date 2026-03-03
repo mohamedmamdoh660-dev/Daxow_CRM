@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Webhook as WebhookIcon, Code2, Globe } from 'lucide-react';
-import { loadButtons, loadWebhooks, type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType } from '@/lib/types/buttons-webhooks';
+import { loadButtons, loadWebhooks, appendLog, type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType } from '@/lib/types/buttons-webhooks';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -53,69 +53,74 @@ export function ModuleActionButtons({ module, userRole = 'admin', record = {}, p
 
     const handleClick = async (btn: CustomButton) => {
         setLoading(p => ({ ...p, [btn.id]: true }));
+        const startTime = Date.now();
         try {
             if (btn.actionType === 'url') {
                 const url = interpolate(btn.actionValue);
                 window.open(url, '_blank');
-                toast({ title: `${btn.name} — navigating...` });
+                toast({ title: `${btn.name} — opening URL...` });
 
             } else if (btn.actionType === 'webhook') {
-                // Find webhook config
                 const webhook = webhooks.find(w => w.id === btn.actionValue);
                 if (!webhook) {
-                    toast({ title: 'Webhook not configured', variant: 'destructive' });
+                    toast({ title: 'Webhook not found — check button configuration', variant: 'destructive' });
                     return;
                 }
 
-                // Build URL with params
-                let url = webhook.url;
+                // Build query params
                 const queryParams = new URLSearchParams();
-
-                // Module params → resolve field values from record
                 webhook.moduleParams.forEach((p: WebhookParam) => {
                     const val = p.field ? (record[p.field] ?? '') : '';
                     queryParams.set(p.name, String(val));
                 });
-
-                // Custom params → static values
                 webhook.customParams.forEach((p: WebhookParam) => {
                     queryParams.set(p.name, p.value ?? '');
                 });
+                const finalUrl = queryParams.toString() ? `${webhook.url}?${queryParams}` : webhook.url;
 
-                // Body
-                let body: string | undefined;
-                let headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-                if (webhook.bodyType === 'json') {
-                    body = webhook.bodyContent ? interpolate(webhook.bodyContent) : JSON.stringify({ record });
-                    headers['Content-Type'] = 'application/json';
+                // Build body
+                let bodyPayload: any = { record, module };
+                if (webhook.bodyType === 'json' && webhook.bodyContent) {
+                    try { bodyPayload = JSON.parse(interpolate(webhook.bodyContent)); }
+                    catch { bodyPayload = interpolate(webhook.bodyContent); }
                 } else if (webhook.bodyType === 'form_data') {
-                    const formData = new URLSearchParams();
-                    webhook.moduleParams.forEach((p: WebhookParam) => {
-                        const val = p.field ? (record[p.field] ?? '') : '';
-                        formData.append(p.name, String(val));
-                    });
-                    webhook.customParams.forEach((p: WebhookParam) => formData.append(p.name, p.value ?? ''));
-                    body = formData.toString();
-                    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    const fd: Record<string, string> = {};
+                    webhook.moduleParams.forEach((p: WebhookParam) => { fd[p.name] = p.field ? String(record[p.field] ?? '') : ''; });
+                    webhook.customParams.forEach((p: WebhookParam) => { fd[p.name] = p.value ?? ''; });
+                    bodyPayload = fd;
                 }
 
-                if (queryParams.toString()) url += '?' + queryParams.toString();
+                // 🔑 Use server-side proxy to avoid CORS
+                const proxyRes = await fetch('/api/webhook-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: finalUrl, method: webhook.method, body: bodyPayload }),
+                });
+                const result = await proxyRes.json();
+                const duration = Date.now() - startTime;
 
-                const res = await fetch(url, {
-                    method: webhook.method,
-                    headers,
-                    body: ['GET', 'DELETE'].includes(webhook.method) ? undefined : (body || JSON.stringify({ record })),
+                // Save execution log
+                appendLog({
+                    id: crypto.randomUUID(),
+                    webhookId: webhook.id,
+                    webhookName: webhook.name,
+                    buttonName: btn.name,
+                    timestamp: new Date().toISOString(),
+                    status: result.ok ? 'success' : 'error',
+                    statusCode: result.status,
+                    duration,
+                    error: result.error || (!result.ok ? `HTTP ${result.status} ${result.statusText}` : undefined),
+                    recordId: record.id,
+                    module,
                 });
 
-                if (res.ok) {
-                    toast({ title: `${btn.name} — executed successfully ✅` });
+                if (result.ok) {
+                    toast({ title: `✅ ${btn.name} — success (${result.status}) • ${duration}ms` });
                 } else {
-                    toast({ title: `${btn.name} — server returned ${res.status}`, variant: 'destructive' });
+                    toast({ title: `❌ ${btn.name} — ${result.error || `HTTP ${result.status}`}`, variant: 'destructive' });
                 }
 
             } else if (btn.actionType === 'function') {
-                // Function: call the named function on window if available
                 const fn = (window as any)[btn.actionValue];
                 if (typeof fn === 'function') {
                     await fn(record);
@@ -125,7 +130,7 @@ export function ModuleActionButtons({ module, userRole = 'admin', record = {}, p
                 }
             }
         } catch (err: any) {
-            toast({ title: `${btn.name} — Error: ${err.message}`, variant: 'destructive' });
+            toast({ title: `❌ ${btn.name} — ${err.message}`, variant: 'destructive' });
         } finally {
             setLoading(p => ({ ...p, [btn.id]: false }));
         }

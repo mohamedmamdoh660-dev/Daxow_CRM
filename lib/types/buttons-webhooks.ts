@@ -104,3 +104,36 @@ export function loadWebhooks(): Webhook[] {
 export function saveWebhooks(data: Webhook[]) {
     localStorage.setItem(WEBHOOKS_KEY, JSON.stringify(data));
 }
+
+// ── Webhook Execution Log ─────────────────────────────────────────────────────
+export interface WebhookLog {
+    id: string;
+    webhookId: string;
+    webhookName: string;
+    buttonName: string;
+    timestamp: string;
+    status: 'success' | 'error';
+    statusCode?: number;
+    duration: number;       // milliseconds
+    error?: string;
+    recordId?: string;
+    module: string;
+}
+
+const LOGS_KEY = 'crm_webhook_logs';
+const MAX_LOGS = 500;       // keep last 500 entries
+
+export function loadLogs(): WebhookLog[] {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem(LOGS_KEY) || '[]'); } catch { return []; }
+}
+export function appendLog(log: WebhookLog) {
+    const existing = loadLogs();
+    const updated = [log, ...existing].slice(0, MAX_LOGS);
+    localStorage.setItem(LOGS_KEY, JSON.stringify(updated));
+}
+export function clearLogsForWebhook(webhookId: string) {
+    const existing = loadLogs();
+    localStorage.setItem(LOGS_KEY, JSON.stringify(existing.filter(l => l.webhookId !== webhookId)));
+}
+

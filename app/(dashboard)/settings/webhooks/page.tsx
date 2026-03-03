@@ -1,27 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-    Plus, Trash2, Edit2, X, Save, ChevronDown, ExternalLink, Eye,
-    Webhook as WebhookIcon, Search, Copy, CheckCircle2
+    Plus, Trash2, Edit2, X, Save, BarChart2, ExternalLink,
+    Webhook as WebhookIcon, Search, CheckCircle2, XCircle, Clock, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
     loadWebhooks, saveWebhooks, MODULE_FIELDS,
-    type Webhook, type WebhookParam, type HttpMethod, type BodyType
+    loadLogs, clearLogsForWebhook,
+    type Webhook, type WebhookParam, type WebhookLog, type HttpMethod, type BodyType
 } from '@/lib/types/buttons-webhooks';
 import { PERMISSION_MODULES } from '@/lib/config/modules';
 
@@ -274,6 +273,117 @@ function WebhookForm({ initial, onSave, onCancel }: {
     );
 }
 
+// ── Webhook Logs Panel ────────────────────────────────────────────────────────
+function WebhookLogsPanel({ webhook, onClose }: { webhook: Webhook; onClose: () => void }) {
+    const [logs, setLogs] = useState<WebhookLog[]>([]);
+    useEffect(() => {
+        setLogs(loadLogs().filter(l => l.webhookId === webhook.id));
+    }, [webhook.id]);
+
+    const handleClear = () => {
+        clearLogsForWebhook(webhook.id);
+        setLogs([]);
+    };
+
+    const successCount = logs.filter(l => l.status === 'success').length;
+    const errorCount = logs.filter(l => l.status === 'error').length;
+    const avgDuration = logs.length ? Math.round(logs.reduce((a, l) => a + l.duration, 0) / logs.length) : 0;
+
+    return (
+        <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div className="flex-1 bg-black/40" onClick={onClose} />
+            {/* Panel */}
+            <div className="w-[520px] bg-white shadow-2xl flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b">
+                    <div>
+                        <h3 className="font-semibold text-gray-800">{webhook.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Execution History</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {logs.length > 0 && (
+                            <Button variant="ghost" size="sm" onClick={handleClear} className="text-xs text-muted-foreground">
+                                Clear All
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+                    </div>
+                </div>
+
+                {/* Stats Summary */}
+                <div className="grid grid-cols-3 gap-4 px-6 py-4 bg-gray-50 border-b">
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{logs.length}</p>
+                        <p className="text-xs text-muted-foreground">Total Calls</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{successCount}</p>
+                        <p className="text-xs text-muted-foreground">Success</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-red-500">{errorCount}</p>
+                        <p className="text-xs text-muted-foreground">Failed</p>
+                    </div>
+                </div>
+                {logs.length > 0 && (
+                    <div className="px-6 py-2 border-b bg-gray-50 flex justify-between text-xs text-muted-foreground">
+                        <span>Success rate: <strong>{logs.length ? Math.round(successCount / logs.length * 100) : 0}%</strong></span>
+                        <span>Avg duration: <strong>{avgDuration}ms</strong></span>
+                    </div>
+                )}
+
+                {/* Logs List */}
+                <div className="flex-1 overflow-y-auto">
+                    {logs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full py-16 text-center text-muted-foreground">
+                            <BarChart2 className="h-12 w-12 opacity-20 mb-3" />
+                            <p className="font-medium">No executions yet</p>
+                            <p className="text-sm opacity-70 mt-1">Click the button in a record to trigger this webhook</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y">
+                            {logs.map(log => (
+                                <div key={log.id} className="px-6 py-3 hover:bg-gray-50">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {log.status === 'success'
+                                                ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                                : <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                                            }
+                                            <span className={cn('text-xs font-bold', log.status === 'success' ? 'text-green-600' : 'text-red-600')}>
+                                                {log.statusCode || (log.status === 'success' ? '200' : 'ERR')}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-medium text-gray-700 truncate">{log.buttonName}</p>
+                                            {log.error && (
+                                                <p className="text-xs text-red-500 mt-0.5 truncate">{log.error}</p>
+                                            )}
+                                            {log.recordId && (
+                                                <p className="text-xs text-muted-foreground mt-0.5">Record: {log.recordId}</p>
+                                            )}
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Clock className="h-3 w-3" />
+                                                {log.duration}ms
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {new Date(log.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function WebhooksPage() {
     const { toast } = useToast();
@@ -283,6 +393,7 @@ export default function WebhooksPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [moduleFilter, setModuleFilter] = useState('all');
+    const [logsWebhookId, setLogsWebhookId] = useState<string | null>(null);
 
     useEffect(() => { setWebhooks(loadWebhooks()); }, []);
 
@@ -408,6 +519,13 @@ export default function WebhooksPage() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 justify-end">
+                                            <Button
+                                                variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                                title="View Logs"
+                                                onClick={() => setLogsWebhookId(w.id)}
+                                            >
+                                                <BarChart2 className="h-3.5 w-3.5" />
+                                            </Button>
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(w.id)}>
                                                 <Edit2 className="h-3.5 w-3.5" />
                                             </Button>
@@ -436,6 +554,12 @@ export default function WebhooksPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Execution Logs Panel */}
+            {logsWebhookId && (() => {
+                const wh = webhooks.find(w => w.id === logsWebhookId);
+                return wh ? <WebhookLogsPanel webhook={wh} onClose={() => setLogsWebhookId(null)} /> : null;
+            })()}
         </div>
     );
 }
