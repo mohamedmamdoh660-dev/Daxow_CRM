@@ -34,7 +34,7 @@ export function SemestersRowActions({
     semester,
     onRefresh,
 }: SemestersRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Semesters');
+    const { canEdit, canDelete } = usePermissions('Academic Years');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);

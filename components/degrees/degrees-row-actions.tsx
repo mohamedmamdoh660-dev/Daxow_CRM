@@ -34,7 +34,7 @@ export function DegreesRowActions({
     degree,
     onRefresh,
 }: DegreesRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Degrees');
+    const { canEdit, canDelete } = usePermissions('Programs');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);

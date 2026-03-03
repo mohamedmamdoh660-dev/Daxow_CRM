@@ -34,7 +34,7 @@ export function TitlesRowActions({
     title,
     onRefresh,
 }: TitlesRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Titles');
+    const { canEdit, canDelete } = usePermissions('Languages & Titles');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);

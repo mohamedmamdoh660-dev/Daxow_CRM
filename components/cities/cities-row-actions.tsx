@@ -35,7 +35,7 @@ export function CitiesRowActions({
     city,
     onRefresh,
 }: CitiesRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Cities');
+    const { canEdit, canDelete } = usePermissions('Countries & Cities');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);

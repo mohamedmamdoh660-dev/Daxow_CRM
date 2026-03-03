@@ -2,7 +2,19 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Fix Academic Years RBAC + Roles Module List 🔧
+
+### Fixed
+- **Roles page** (`roles/page.tsx`):
+  - Expanded `MODULES` list from 14 to 19 modules — added `Degrees`, `Semesters`, `Specialties`, `Countries`, `Cities`, `Languages`, `Titles` as individual modules (previously incorrectly grouped as `Countries & Cities` and `Languages & Titles`)
+  - Now matches exactly the module keys used in all row-actions `usePermissions(...)` calls
+- **Academic Years Table** (`academic-years-table.tsx`):
+  - Added `usePermissions('Academic Years')` inside the table component
+  - Bulk **Activate / Deactivate** buttons: now hidden unless `canEdit`
+  - Bulk **Delete** button: now hidden unless `canDelete`
+
 ## [2026-03-04] - Full RBAC Audit — All Modules 🛡️
+
 
 ### Fixed
 - **Applications detail** (`applications/[id]/page.tsx`):

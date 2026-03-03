@@ -34,7 +34,7 @@ export function LanguagesRowActions({
     language,
     onRefresh,
 }: LanguagesRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Languages');
+    const { canEdit, canDelete } = usePermissions('Languages & Titles');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);

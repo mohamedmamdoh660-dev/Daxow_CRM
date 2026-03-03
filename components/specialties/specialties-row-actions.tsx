@@ -34,7 +34,7 @@ export function SpecialtiesRowActions({
     specialty,
     onRefresh,
 }: SpecialtiesRowActionsProps) {
-    const { canEdit, canDelete } = usePermissions('Specialties');
+    const { canEdit, canDelete } = usePermissions('Faculties');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
