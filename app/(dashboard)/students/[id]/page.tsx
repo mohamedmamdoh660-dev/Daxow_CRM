@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddApplicationModal from '@/components/AddApplicationModal';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { ModuleActionButtons } from '@/components/shared/module-action-buttons';
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params);
@@ -136,7 +137,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {/* Custom buttons — header position */}
+                    <ModuleActionButtons
+                        module="Students"
+                        position="header"
+                        page="in_record"
+                        record={student}
+                    />
                     {canEdit && (
                         <Link href={`/students/${student.id}/edit`}>
                             <Button variant="outline">

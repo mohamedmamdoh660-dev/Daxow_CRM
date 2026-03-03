@@ -124,7 +124,7 @@ const SETTINGS_SECTIONS = [
             { name: 'Zapier', href: '/settings/coming-soon' },
             { name: 'Google Workspace', href: '/settings/coming-soon' },
             { name: 'Microsoft 365', href: '/settings/coming-soon' },
-            { name: 'Webhooks', href: '/settings/coming-soon' },
+            { name: 'Webhooks', href: '/settings/webhooks' },
         ],
     },
     {
@@ -133,7 +133,7 @@ const SETTINGS_SECTIONS = [
         icon: Code2,
         items: [
             { name: 'APIs & SDKs', href: '/settings/api' },
-            { name: 'Webhooks', href: '/settings/coming-soon' },
+            { name: 'Webhooks', href: '/settings/webhooks' },
             { name: 'Variables', href: '/settings/coming-soon' },
             { name: 'Functions', href: '/settings/coming-soon' },
         ],
@@ -157,7 +157,7 @@ export default function SettingsPage() {
             {/* Header */}
             <div className="border-b bg-white px-8 py-5 flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
-                <div className="relative w-72">
+                <div className="relative w-72" suppressHydrationWarning>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search settings..."
