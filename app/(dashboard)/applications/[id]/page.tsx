@@ -43,6 +43,7 @@ import {
 import { FileUpload } from '@/components/ui/file-upload';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 // Stage configuration with colors and icons
 const STAGES = [
@@ -110,6 +111,7 @@ function formatCurrency(amount: string | number | null | undefined, currency?: s
 
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params);
+    const { canEdit, canDelete } = usePermissions('Applications');
     const [application, setApplication] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [updatingStage, setUpdatingStage] = useState(false);
@@ -312,14 +314,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                     </div>
                 </div>
 
-                {/* Stage Changer */}
+                {/* Stage Changer - only for editors */}
                 <div className="flex items-center gap-3">
                     <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Change Stage</label>
                         <Select
                             value={application.stage}
                             onValueChange={handleStageChange}
-                            disabled={updatingStage}
+                            disabled={updatingStage || !canEdit}
                         >
                             <SelectTrigger className="w-[220px]">
                                 <SelectValue />
@@ -668,7 +670,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                                     <Edit className="h-5 w-5" />
                                     Notes
                                 </CardTitle>
-                                {!editingNotes && (
+                                {canEdit && !editingNotes && (
                                     <Button variant="outline" size="sm" onClick={() => setEditingNotes(true)}>
                                         <Edit className="h-3 w-3 mr-1" />
                                         Edit
@@ -1031,36 +1033,38 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                             </p>
                         </div>
 
-                        {/* Upload Area */}
-                        <Card className="w-full md:w-[400px]">
-                            <CardContent className="pt-6 space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Document Type</label>
-                                    <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {APP_DOC_TYPES.map(t => (
-                                                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <FileUpload
-                                    label="Upload Document"
-                                    accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                    onFileSelect={handleDocumentUpload}
-                                    disabled={uploadingDoc !== null}
-                                />
-                                {uploadingDoc && (
-                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Uploading...
+                        {/* Upload Area - only for editors */}
+                        {canEdit && (
+                            <Card className="w-full md:w-[400px]">
+                                <CardContent className="pt-6 space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Document Type</label>
+                                        <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {APP_DOC_TYPES.map(t => (
+                                                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    <FileUpload
+                                        label="Upload Document"
+                                        accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                        onFileSelect={handleDocumentUpload}
+                                        disabled={uploadingDoc !== null}
+                                    />
+                                    {uploadingDoc && (
+                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Uploading...
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
@@ -1082,7 +1086,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                                         </h4>
                                         <div className="grid gap-4 md:grid-cols-3">
                                             {otherDocs.map((doc: any) => (
-                                                <DocumentCard key={doc.id} doc={doc} onDelete={() => handleDocumentDelete(doc.id)} />
+                                                <DocumentCard key={doc.id} doc={doc} onDelete={() => handleDocumentDelete(doc.id)} canDelete={canDelete} />
                                             ))}
                                         </div>
                                     </div>
@@ -1108,7 +1112,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {docsOfType.map((doc: any) => (
-                                            <DocumentCard key={doc.id} doc={doc} onDelete={() => handleDocumentDelete(doc.id)} />
+                                            <DocumentCard key={doc.id} doc={doc} onDelete={() => handleDocumentDelete(doc.id)} canDelete={canDelete} />
                                         ))}
                                     </CardContent>
                                 </Card>
@@ -1260,7 +1264,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     );
 }
 
-function DocumentCard({ doc, onDelete }: { doc: any, onDelete: () => void }) {
+function DocumentCard({ doc, onDelete, canDelete }: { doc: any, onDelete: () => void, canDelete?: boolean }) {
     return (
         <Card className="hover:shadow-md transition-shadow bg-white">
             <CardContent className="p-3">
@@ -1284,9 +1288,11 @@ function DocumentCard({ doc, onDelete }: { doc: any, onDelete: () => void }) {
                                 <Eye className="h-4 w-4" />
                             </a>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={onDelete}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canDelete && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={onDelete}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        )}
                     </div>
                 </div>
             </CardContent>

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Link from 'next/link';
 import { Plus, Search, FileText, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     SmartFilterPanel,
     SmartFilterToggleButton,
@@ -36,6 +37,7 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 export default function ApplicationsPage() {
+    const { canAdd, canDelete } = usePermissions('Applications');
     const [data, setData] = useState<any[]>([]);
     const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, totalPages: 0 });
     const [loading, setLoading] = useState(true);
@@ -182,12 +184,14 @@ export default function ApplicationsPage() {
                     <h1 className="text-3xl font-bold">Applications</h1>
                     <p className="text-muted-foreground">Manage student applications</p>
                 </div>
-                <Button asChild>
-                    <Link href="/applications/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Application
-                    </Link>
-                </Button>
+                {canAdd && (
+                    <Button asChild>
+                        <Link href="/applications/new">
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Application
+                        </Link>
+                    </Button>
+                )}
             </div>
 
             {/* Stats Cards */}
@@ -263,12 +267,14 @@ export default function ApplicationsPage() {
                                     <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                                     <h3 className="text-lg font-semibold">No applications found</h3>
                                     <p className="text-muted-foreground mb-4">Get started by creating a new application.</p>
-                                    <Button asChild>
-                                        <Link href="/applications/new">
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            New Application
-                                        </Link>
-                                    </Button>
+                                    {canAdd && (
+                                        <Button asChild>
+                                            <Link href="/applications/new">
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                New Application
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             ) : (
                                 <>
@@ -323,19 +329,21 @@ export default function ApplicationsPage() {
                                                         {new Date(app.createdAt).toLocaleDateString()}
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDelete(app.id)}
-                                                            disabled={deleteId === app.id}
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            {deleteId === app.id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Trash2 className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
+                                                        {canDelete && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleDelete(app.id)}
+                                                                disabled={deleteId === app.id}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                {deleteId === app.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                        )}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

@@ -2,6 +2,14 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-03] - RBAC Edit Button Guard + Default Owner 🔐
+
+### Fixed
+- **Edit button security**: `students/[id]/page.tsx` now checks `canEdit` permission before rendering the Edit button. Users with `add`-only permission can no longer see or navigate to the edit page.
+- **Default owner for Student create**: `registration-summary.tsx` now uses `useCurrentUser` and passes `initialUserId` to `OwnerSelector` — logged-in user is auto-selected as owner.
+- **Default owner for Application create**: `AddApplicationModal.tsx` now includes `OwnerSelector` with `initialUserId` defaulting to the logged-in user.
+- Leads form already had the default owner fix; no change needed there.
+
 ## [2026-03-03] - Role-Based Menu Visibility 🔒
 
 ### Added
