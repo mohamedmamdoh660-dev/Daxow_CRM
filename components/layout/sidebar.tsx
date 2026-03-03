@@ -63,18 +63,22 @@ export function Sidebar() {
             const stored = localStorage.getItem('userMeta');
             const userRole = localStorage.getItem('userRole') || '';
 
+            // Helper: grant all permissions including menu_access for admin
+            const adminPerms = () => navigation.flatMap(n => [
+                { module: n.module, action: 'read' },
+                { module: n.module, action: 'menu_access' },
+            ]);
+
             if (stored) {
                 const meta = JSON.parse(stored);
                 // If admin role, show everything
                 if (userRole === 'admin' || meta?.role === 'admin') {
-                    // Grant all permissions for admins
-                    setPermissions(navigation.map(n => ({ module: n.module, action: 'read' })));
+                    setPermissions(adminPerms());
                 } else if (meta?.permissions && meta.permissions.length > 0) {
                     setPermissions(meta.permissions);
                 }
             } else if (userRole === 'admin') {
-                // Fallback: role in localStorage but no full meta
-                setPermissions(navigation.map(n => ({ module: n.module, action: 'read' })));
+                setPermissions(adminPerms());
             } else {
                 // No meta stored yet — fetch from /api/auth/me
                 fetch('/api/auth/me')
@@ -84,7 +88,7 @@ export function Sidebar() {
                             localStorage.setItem('userMeta', JSON.stringify(data.user));
                             localStorage.setItem('userRole', data.user.role || '');
                             if (data.user.role === 'admin') {
-                                setPermissions(navigation.map(n => ({ module: n.module, action: 'read' })));
+                                setPermissions(adminPerms());
                             } else if (data.user.permissions?.length > 0) {
                                 setPermissions(data.user.permissions);
                             }
@@ -92,22 +96,29 @@ export function Sidebar() {
                     })
                     .catch(() => {
                         // Fallback: show all links if fetch fails (non-critical)
-                        setPermissions(navigation.map(n => ({ module: n.module, action: 'read' })));
+                        setPermissions(adminPerms());
                     });
             }
         } catch (e) {
             // On any error, show all links so user isn't blocked
-            setPermissions(navigation.map(n => ({ module: n.module, action: 'read' })));
+            setPermissions(navigation.flatMap(n => [
+                { module: n.module, action: 'read' },
+                { module: n.module, action: 'menu_access' },
+            ]));
         }
     }, []);
 
     const hasAccess = (module: string) => {
-        // Check for any of the new RBAC action types ('view', 'add', 'edit', 'delete', 'export', 'import')
-        // OR legacy action types ('read', 'manage', 'create', 'update') for backwards compatibility
-        return permissions.some(p =>
-            p.module === module &&
-            ['view', 'add', 'edit', 'delete', 'export', 'import', 'read', 'manage', 'create', 'update'].includes(p.action)
-        );
+        // Special modules always visible (Dashboard, Settings, Profile)
+        const alwaysVisible = ['Dashboard', 'Settings', 'Profile'];
+        if (alwaysVisible.includes(module)) {
+            return permissions.some(p =>
+                p.module === module &&
+                ['view', 'add', 'edit', 'delete', 'export', 'import', 'read', 'manage', 'create', 'update', 'menu_access'].includes(p.action)
+            );
+        }
+        // For all other modules: require explicit menu_access permission
+        return permissions.some(p => p.module === module && p.action === 'menu_access');
     };
 
     const handleLogout = async () => {

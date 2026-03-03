@@ -2,6 +2,19 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-03] - Role-Based Menu Visibility 🔒
+
+### Added
+- **`menu_access` permission action** — new permission type that controls whether a module appears in the sidebar navigation
+  - Automatically checked when any other permission (view/add/edit...) is granted
+  - Unchecking `menu_access` clears ALL permissions for that module
+  - Shown as the first "Menu" column in the Roles permission matrix, visually separated from other actions
+- **Admin users** always see all modules (bypass via `menu_access` auto-grant)
+
+### Modified
+- **`components/layout/sidebar.tsx`**: `hasAccess()` now requires `menu_access` permission instead of any view/edit action. Dashboard, Settings, and Profile remain always visible to any authenticated user.
+- **`app/(dashboard)/roles/page.tsx`**: New "Menu" column added as first column in the permission matrix. Non-menu actions become disabled if Menu is unchecked.
+
 ## [2026-03-03] - Smart Dynamic Filter System 🔍⚡
 
 ### Added

@@ -34,6 +34,7 @@ const MODULES = [
 ];
 
 const ACTIONS: { key: string; label: string; color: string }[] = [
+    { key: 'menu_access', label: 'Menu', color: 'text-gray-600' },
     { key: 'view', label: 'View Own', color: 'text-blue-600' },
     { key: 'view_all', label: 'View All', color: 'text-cyan-600' },
     { key: 'add', label: 'Add', color: 'text-green-600' },
@@ -53,15 +54,23 @@ function hasPermission(permissions: Permission[], module: string, action: string
 function togglePerm(permissions: Permission[], module: string, action: string): Permission[] {
     if (hasPermission(permissions, module, action)) {
         const remainingPerms = permissions.filter(p => !(p.module === module && p.action === action));
+        // If unchecking menu_access, clear ALL permissions for this module
+        if (action === 'menu_access') {
+            return remainingPerms.filter(p => p.module !== module);
+        }
         // If unchecking the last view permission, cascade remove all other permissions for this module
         const hasAnyView = remainingPerms.some(p => p.module === module && (p.action === 'view' || p.action === 'view_all'));
         if (!hasAnyView && (action === 'view' || action === 'view_all')) {
-            return remainingPerms.filter(p => p.module !== module); // removes add, edit, delete, etc.
+            return remainingPerms.filter(p => p.module !== module);
         }
         return remainingPerms;
     }
+    // Auto-add menu_access when adding any permission
+    if (action !== 'menu_access' && !hasPermission(permissions, module, 'menu_access')) {
+        permissions = [...permissions, { module, action: 'menu_access' }];
+    }
     // Automatically add 'view' if a non-view action is checked and no view is present
-    if (action !== 'view' && action !== 'view_all' && !hasPermission(permissions, module, 'view') && !hasPermission(permissions, module, 'view_all')) {
+    if (action !== 'view' && action !== 'view_all' && action !== 'menu_access' && !hasPermission(permissions, module, 'view') && !hasPermission(permissions, module, 'view_all')) {
         return [...permissions, { module, action: 'view' }, { module, action }];
     }
     return [...permissions, { module, action }];
@@ -283,6 +292,7 @@ export default function RolesPage() {
                                             <tr key={module} className={`${idx % 2 === 0 ? '' : 'bg-muted/20'} hover:bg-muted/40 transition-colors`}>
                                                 <td className="py-2.5 px-4 font-medium text-sm">{module}</td>
                                                 {ACTIONS.map(a => {
+                                                    const isMenuAction = a.key === 'menu_access';
                                                     const isViewOwnAction = a.key === 'view' || a.key === 'view_all';
                                                     const supportsViewOwn = VIEW_OWN_MODULES.includes(module);
                                                     // For modules that don't support View Own, disable view/view_all checkboxes
@@ -293,15 +303,20 @@ export default function RolesPage() {
                                                             </td>
                                                         );
                                                     }
+                                                    const hasMenuAccess = hasPermission(formPerms, module, 'menu_access');
                                                     const hasAnyView = hasPermission(formPerms, module, 'view') || hasPermission(formPerms, module, 'view_all');
-                                                    const isCheckboxDisabled = !isViewOwnAction && !hasAnyView && supportsViewOwn;
+                                                    // Disable non-menu actions if no menu_access
+                                                    const isCheckboxDisabled =
+                                                        (!isMenuAction && !hasMenuAccess) ||
+                                                        (!isViewOwnAction && !isMenuAction && !hasAnyView && supportsViewOwn);
 
                                                     return (
-                                                        <td key={a.key} className="py-2.5 px-3 text-center">
+                                                        <td key={a.key} className={`py-2.5 px-3 text-center ${isMenuAction ? 'border-r border-border/50' : ''}`}>
                                                             <Checkbox
                                                                 checked={hasPermission(formPerms, module, a.key)}
                                                                 onCheckedChange={() => setFormPerms(prev => togglePerm(prev, module, a.key))}
                                                                 disabled={isCheckboxDisabled}
+                                                                className={isMenuAction ? 'border-gray-400' : ''}
                                                             />
                                                         </td>
                                                     );

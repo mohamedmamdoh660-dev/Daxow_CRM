@@ -161,7 +161,7 @@ export default function StudentsPage() {
         try {
             const res = await fetch(`/api/students?${buildQueryParams()}`);
             const data = await res.json();
-            setStudents(data.data || []);
+            setStudents(data.students || data.data || []);
             setTotalCount(data.total || 0);
         } catch (e) {
             console.error('Failed to fetch students', e);
