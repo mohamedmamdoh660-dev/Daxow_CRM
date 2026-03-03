@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWizard } from './registration-wizard-context';
@@ -11,6 +12,7 @@ import { OwnerSelector } from '@/components/shared/owner-selector';
 
 export const RegistrationSummary: React.FC = () => {
     const { formData, documents, nextStep, previousStep, goToStep, setFormData } = useWizard();
+    const { user: currentUser } = useCurrentUser();
     const [ownerType, setOwnerTypeState] = useState(formData.ownerType as string || '');
     const [ownerId, setOwnerIdState] = useState(formData.ownerId as string || '');
 
@@ -233,6 +235,7 @@ export const RegistrationSummary: React.FC = () => {
                         ownerId={ownerId}
                         onOwnerTypeChange={handleOwnerTypeChange}
                         onOwnerIdChange={handleOwnerIdChange}
+                        initialUserId={currentUser?.id}
                     />
                 </CardContent>
             </Card>

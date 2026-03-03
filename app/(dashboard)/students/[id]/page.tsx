@@ -30,9 +30,11 @@ import {
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddApplicationModal from '@/components/AddApplicationModal';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params);
+    const { canEdit } = usePermissions('Students');
     const [student, setStudent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showAddAppModal, setShowAddAppModal] = useState(false);
@@ -135,12 +137,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Link href={`/students/${student.id}/edit`}>
-                        <Button variant="outline">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                        </Button>
-                    </Link>
+                    {canEdit && (
+                        <Link href={`/students/${student.id}/edit`}>
+                            <Button variant="outline">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                            </Button>
+                        </Link>
+                    )}
                     <Button variant="outline" size="icon">
                         <MoreVertical className="h-4 w-4" />
                     </Button>

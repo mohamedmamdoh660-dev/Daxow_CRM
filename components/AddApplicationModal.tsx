@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, DollarSign, GraduationCap } from 'lucide-react';
+import { OwnerSelector } from '@/components/shared/owner-selector';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
 
 interface SelectOption {
     id: string;
@@ -58,6 +60,7 @@ export default function AddApplicationModal({
 }: AddApplicationModalProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const { user: currentUser } = useCurrentUser();
 
     // Form state
     const [programId, setProgramId] = useState('');
@@ -67,6 +70,8 @@ export default function AddApplicationModal({
     const [stage, setStage] = useState('Draft');
     const [notes, setNotes] = useState('');
     const [agencyId, setAgencyId] = useState('');
+    const [ownerType, setOwnerType] = useState('');
+    const [ownerId, setOwnerId] = useState('');
 
     // Dropdown data
     const [programs, setPrograms] = useState<ProgramOption[]>([]);
@@ -165,6 +170,8 @@ export default function AddApplicationModal({
         setStage('Draft');
         setNotes('');
         setAgencyId('');
+        setOwnerType('');
+        setOwnerId('');
         setError('');
     };
 
@@ -198,6 +205,7 @@ export default function AddApplicationModal({
                     stage,
                     notes: notes || undefined,
                     agencyId: agencyId && agencyId !== 'none' ? agencyId : undefined,
+                    ...(ownerType && ownerId ? { ownerType, ownerId } : {}),
                 }),
             });
 
@@ -369,6 +377,18 @@ export default function AddApplicationModal({
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* Owner */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Record Owner</label>
+                            <OwnerSelector
+                                ownerType={ownerType}
+                                ownerId={ownerId}
+                                onOwnerTypeChange={(t) => { setOwnerType(t); setOwnerId(''); }}
+                                onOwnerIdChange={setOwnerId}
+                                initialUserId={currentUser?.id}
+                            />
                         </div>
 
                         {/* Notes */}
