@@ -76,7 +76,7 @@ const SETTINGS_SECTIONS = [
         icon: Zap,
         items: [
             { name: 'Workflow Rules', href: '/settings/coming-soon' },
-            { name: 'Actions', href: '/settings/coming-soon' },
+            { name: 'Actions', href: '/settings/webhooks' },
             { name: 'Schedules', href: '/settings/coming-soon' },
             { name: 'Assignment Rules', href: '/settings/coming-soon' },
             { name: 'Scoring Rules', href: '/settings/coming-soon' },
@@ -124,7 +124,6 @@ const SETTINGS_SECTIONS = [
             { name: 'Zapier', href: '/settings/coming-soon' },
             { name: 'Google Workspace', href: '/settings/coming-soon' },
             { name: 'Microsoft 365', href: '/settings/coming-soon' },
-            { name: 'Webhooks', href: '/settings/webhooks' },
         ],
     },
     {
@@ -133,7 +132,6 @@ const SETTINGS_SECTIONS = [
         icon: Code2,
         items: [
             { name: 'APIs & SDKs', href: '/settings/api' },
-            { name: 'Webhooks', href: '/settings/webhooks' },
             { name: 'Variables', href: '/settings/coming-soon' },
             { name: 'Functions', href: '/settings/coming-soon' },
         ],
