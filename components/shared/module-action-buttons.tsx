@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Webhook, Code2, Globe, CheckCircle, XCircle } from 'lucide-react';
-import { loadButtons, loadWebhooks, type CustomButton, type Webhook, type PositionType, type PageType } from '@/lib/types/buttons-webhooks';
+import { Loader2, Webhook as WebhookIcon, Code2, Globe } from 'lucide-react';
+import { loadButtons, loadWebhooks, type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType } from '@/lib/types/buttons-webhooks';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -72,13 +72,13 @@ export function ModuleActionButtons({ module, userRole = 'admin', record = {}, p
                 const queryParams = new URLSearchParams();
 
                 // Module params → resolve field values from record
-                webhook.moduleParams.forEach(p => {
+                webhook.moduleParams.forEach((p: WebhookParam) => {
                     const val = p.field ? (record[p.field] ?? '') : '';
                     queryParams.set(p.name, String(val));
                 });
 
                 // Custom params → static values
-                webhook.customParams.forEach(p => {
+                webhook.customParams.forEach((p: WebhookParam) => {
                     queryParams.set(p.name, p.value ?? '');
                 });
 
@@ -91,11 +91,11 @@ export function ModuleActionButtons({ module, userRole = 'admin', record = {}, p
                     headers['Content-Type'] = 'application/json';
                 } else if (webhook.bodyType === 'form_data') {
                     const formData = new URLSearchParams();
-                    webhook.moduleParams.forEach(p => {
+                    webhook.moduleParams.forEach((p: WebhookParam) => {
                         const val = p.field ? (record[p.field] ?? '') : '';
                         formData.append(p.name, String(val));
                     });
-                    webhook.customParams.forEach(p => formData.append(p.name, p.value ?? ''));
+                    webhook.customParams.forEach((p: WebhookParam) => formData.append(p.name, p.value ?? ''));
                     body = formData.toString();
                     headers['Content-Type'] = 'application/x-www-form-urlencoded';
                 }
@@ -132,21 +132,20 @@ export function ModuleActionButtons({ module, userRole = 'admin', record = {}, p
     };
 
     return (
-        <div className={cn('flex flex-wrap gap-2', className)}>
+        <div className={cn('flex flex-wrap gap-2 justify-end', className)}>
             {buttons.map(btn => (
                 <Button
                     key={btn.id}
                     variant="outline"
-                    size="sm"
                     disabled={loading[btn.id]}
                     onClick={() => handleClick(btn)}
                     className="gap-2"
                 >
                     {loading[btn.id]
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : btn.actionType === 'webhook' ? <Webhook className="h-3.5 w-3.5 text-purple-600" />
-                            : btn.actionType === 'function' ? <Code2 className="h-3.5 w-3.5 text-blue-600" />
-                                : <Globe className="h-3.5 w-3.5 text-green-600" />
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : btn.actionType === 'webhook' ? <WebhookIcon className="h-4 w-4 text-purple-600" />
+                            : btn.actionType === 'function' ? <Code2 className="h-4 w-4 text-blue-600" />
+                                : <Globe className="h-4 w-4 text-green-600" />
                     }
                     {btn.name}
                 </Button>
