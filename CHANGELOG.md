@@ -2,7 +2,31 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Full RBAC Audit — All Modules 🛡️
+
+### Fixed
+- **Applications detail** (`applications/[id]/page.tsx`):
+  - Stage change dropdown: disabled unless `canEdit`
+  - Notes Edit button: hidden unless `canEdit`
+  - Document upload section: hidden unless `canEdit`
+  - Document delete button: hidden unless `canDelete`
+- **Row Actions** — added `usePermissions` guards to all 10 row-action components:
+  - `leads-row-actions` → `usePermissions('Leads')`: Edit, Activate/Deactivate, Delete guarded
+  - `faculties-row-actions` → `usePermissions('Faculties')`: Edit, Activate/Deactivate, Delete guarded
+  - `degrees-row-actions` → `usePermissions('Degrees')`: Edit, Activate/Deactivate, Delete guarded
+  - `academic-years-row-actions` → `usePermissions('Academic Years')`: Edit, Activate/Deactivate, Delete guarded
+  - `cities-row-actions` → `usePermissions('Cities')`: Edit, Activate/Deactivate, Delete guarded
+  - `semesters-row-actions` → `usePermissions('Semesters')`: Edit, Activate/Deactivate, Delete guarded
+  - `specialties-row-actions` → `usePermissions('Specialties')`: Edit, Activate/Deactivate, Delete guarded
+  - `countries-row-actions` → `usePermissions('Countries')`: Edit, Activate/Deactivate, Delete guarded
+  - `languages-row-actions` → `usePermissions('Languages')`: Edit, Activate/Deactivate, Delete guarded
+  - `titles-row-actions` → `usePermissions('Titles')`: Edit, Activate/Deactivate, Delete guarded
+- **Agents Table** (`agents-table.tsx`):
+  - "Register New Agency" button: hidden unless `canAdd`
+  - "Deactivate Account" item: hidden unless `canEdit`
+
 ## [2026-03-03] - Applications Module - Full RBAC Guards 🛡️
+
 
 ### Fixed
 - **Applications list** (`applications/page.tsx`):

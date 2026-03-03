@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, X, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import {
     Table,
     TableBody,
@@ -51,6 +52,7 @@ export function AcademicYearsTable({
     onSearchChange,
     onRefresh,
 }: AcademicYearsTableProps) {
+    const { canEdit, canDelete } = usePermissions('Academic Years');
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [isDeleting, setIsDeleting] = useState(false);
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -180,33 +182,39 @@ export function AcademicYearsTable({
                         {selectedRows.size} selected
                     </span>
                     <div className="flex gap-2 ml-auto">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleBulkActivate(true)}
-                            disabled={isDeleting}
-                        >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Activate
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleBulkActivate(false)}
-                            disabled={isDeleting}
-                        >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Deactivate
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={handleBulkDelete}
-                            disabled={isDeleting}
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                        </Button>
+                        {canEdit && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleBulkActivate(true)}
+                                disabled={isDeleting}
+                            >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Activate
+                            </Button>
+                        )}
+                        {canEdit && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleBulkActivate(false)}
+                                disabled={isDeleting}
+                            >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Deactivate
+                            </Button>
+                        )}
+                        {canDelete && (
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={handleBulkDelete}
+                                disabled={isDeleting}
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}

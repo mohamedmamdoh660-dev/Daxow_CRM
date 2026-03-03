@@ -29,7 +29,8 @@ interface Role {
 // ── Constants ──────────────────────────────────────────────────────────────
 const MODULES = [
     'Dashboard', 'Students', 'Applications', 'Leads', 'Programs',
-    'Academic Years', 'Faculties', 'Countries & Cities', 'Languages & Titles',
+    'Academic Years', 'Faculties', 'Degrees', 'Semesters', 'Specialties',
+    'Countries', 'Cities', 'Languages', 'Titles',
     'Agents', 'User Management', 'Roles & Permissions', 'Settings', 'Profile',
 ];
 
