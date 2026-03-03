@@ -17,6 +17,7 @@ import {
 import { Shield, ShieldAlert, ShieldCheck, Plus, Edit, Trash2, Users, CheckSquare, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { PERMISSION_MODULES, OWNER_BASED_MODULES } from '@/lib/config/modules';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Permission { module: string; action: string; }
@@ -26,12 +27,9 @@ interface Role {
     _count?: { userGroups: number };
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────
-const MODULES = [
-    'Dashboard', 'Students', 'Applications', 'Leads', 'Programs',
-    'Academic Years', 'Faculties', 'Countries & Cities', 'Languages & Titles',
-    'Agents', 'User Management', 'Roles & Permissions', 'Settings', 'Profile',
-];
+// ── Constants derived from central module config ───────────────────────────
+// To add a new module: edit lib/config/modules.ts — no changes needed here.
+const MODULES = PERMISSION_MODULES;
 
 const ACTIONS: { key: string; label: string; color: string }[] = [
     { key: 'menu_access', label: 'Menu', color: 'text-gray-600' },
@@ -44,8 +42,8 @@ const ACTIONS: { key: string; label: string; color: string }[] = [
     { key: 'import', label: 'Import', color: 'text-indigo-600' },
 ];
 
-// Only these modules support View Own / View All (owner-based RBAC)
-const VIEW_OWN_MODULES = ['Students', 'Leads', 'Applications'];
+/** Modules with owner-based row filtering (View Own / View All) — derived from config */
+const VIEW_OWN_MODULES = OWNER_BASED_MODULES;
 
 // ── Permission matrix helpers ──────────────────────────────────────────────
 function hasPermission(permissions: Permission[], module: string, action: string) {

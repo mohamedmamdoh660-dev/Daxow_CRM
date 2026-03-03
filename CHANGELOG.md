@@ -2,7 +2,23 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Fix Empty Data for Non-Owner Modules 🔧
+
+### Root Cause
+Modules without owner-based RBAC (Academic Years, Semesters, Countries & Cities) show `—` for View Own/View All in the roles UI. When a role only had `menu_access`, the backend rejected GET requests because it required `view` or `view_all`.
+
+### Fixed — Backend (4 controllers)
+Added `menu_access` as an accepted permission on all GET endpoints:
+- `academic-years.controller.ts` — `GET /` and `GET /:id`
+- `semesters.controller.ts` — `GET /` and `GET /:id`
+- `countries.controller.ts` — `GET /` and `GET /:id`
+- `cities.controller.ts` — `GET /` and `GET /:id`
+
+### Fixed — Frontend (`roles/page.tsx`)
+In `togglePerm()`: for non-owner modules (not Students/Leads/Applications), checking **Menu** now automatically adds `view` permission too — ensuring future roles work correctly out of the box.
+
 ## [2026-03-04] - Full RBAC Audit: Add/Edit/Delete Guards 🔐
+
 
 ### Fixed — Unguarded **Add** Buttons (6 pages)
 All pages now use `usePermissions` with correct backend-aligned module names:
