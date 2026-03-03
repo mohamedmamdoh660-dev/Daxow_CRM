@@ -1,238 +1,191 @@
-# Permissions & Access Control System (Future Implementation)
+# Permissions & RBAC System
+
+> **Status:** ✅ Fully Implemented  
+> **Last Updated:** March 4, 2026
+
+---
 
 ## Overview
-This document outlines the planned permissions and access control system for the CRM. This will be implemented in a future phase to control who can perform specific actions on leads, students, and other entities.
 
-## User Roles
+The Admission CRM uses a **Role-Based Access Control (RBAC)** system. Every user belongs to one or more **roles** (groups). Each role has a set of granular **permissions** per module.
 
-### 1. Admin
-- **Full Access**: Can do everything
-- Can assign/reassign leads to any user
-- Can create, edit, delete all records
-- Can manage users and permissions
-- Can access all settings and integrations
-
-### 2. Team Lead
-- **Team Management**: Manage their team members
-- Can assign leads within their team
-- Can edit all leads assigned to their team
-- Can view reports for their team
-- Cannot manage users or system settings
-
-### 3. Sales Manager
-- **Lead Management**: Full access to leads
-- Can receive and assign leads
-- Can convert leads to students/agents
-- Can add notes and send emails
-- Cannot manage users
-
-### 4. Counselor
-- **Student Support**: Focus on student applications
-- Can view assigned leads
-- Can add notes to assigned leads
-- Can send emails
-- Cannot reassign leads
-- Cannot delete records
-
-### 5. Viewer
-- **Read-Only Access**
-- Can view leads and students
-- Cannot edit or delete
-- Cannot send emails or make calls
+Permissions are enforced at **three layers**:
+1. **Backend** — NestJS `PermissionsGuard` + `@RequirePermissions` decorator
+2. **Frontend UI** — Buttons/links hidden using `usePermissions` hook
+3. **Sidebar** — Navigation items hidden if no `menu_access` permission
 
 ---
 
-## Lead Assignment Permissions
+## Permission Actions
 
-### Who Can Receive Leads?
-Configurable per role:
-- ✅ Admins (default: can receive)
-- ✅ Team Leads (default: can receive)
-- ✅ Sales Managers (default: can receive)
-- ⚠️ Counselors (default: cannot receive)
-- ❌ Viewers (never receive)
+| Action | Key | Description |
+|--------|-----|-------------|
+| Menu | `menu_access` | Show the module link in the sidebar |
+| View Own | `view` | See only records owned by the user |
+| View All | `view_all` | See all records regardless of owner |
+| Add | `add` | Create new records |
+| Edit | `edit` | Update existing records |
+| Delete | `delete` | Remove records |
+| Export | `export` | Export data to CSV/Excel |
+| Import | `import` | Import data from file |
 
-### Lead Assignment Settings
-**Location**: Settings > Lead Management > Assignment Rules
+---
+
+## Module Groups
+
+Modules are grouped by their **backend permission key**. Sub-modules share the parent's key:
+
+| Permission Module (backend key) | Pages / Sub-modules |
+|--------------------------------|---------------------|
+| `Dashboard` | Dashboard |
+| `Leads` | Leads (owner-based ✓) |
+| `Students` | Students (owner-based ✓) |
+| `Applications` | Applications (owner-based ✓) |
+| `Academic Years` | Academic Years, Semesters |
+| `Programs` | Programs, Degrees |
+| `Faculties` | Faculties, Specialties |
+| `Countries & Cities` | Countries, Cities |
+| `Languages & Titles` | Languages, Titles |
+| `Agents` | Agents |
+| `User Management` | Users |
+| `Roles & Permissions` | Roles |
+| `Settings` | Settings |
+| `Profile` | Profile |
+
+> **Owner-based modules** support **View Own** and **View All** separately.  
+> **Non-owner modules** automatically get `view` when `menu_access` is granted.
+
+---
+
+## Frontend: `usePermissions` Hook
+
+**File:** `lib/hooks/use-permissions.ts`
 
 ```typescript
-interface AssignmentRules {
-  autoAssign: boolean; // Automatically assign new leads
-  assignmentMethod: 'round-robin' | 'manual' | 'weighted';
-  eligibleRoles: string[]; // Which roles can receive leads
-  dailyLimit?: number; // Max leads per user per day
-  workloadBalancing: boolean; // Balance based on current workload
+const { canAdd, canEdit, canDelete, canView, canViewAll } = usePermissions('Students');
+
+// Guard UI elements:
+{canAdd && <Button>Add Student</Button>}
+{canEdit && <Button>Edit</Button>}
+{canDelete && <Button>Delete</Button>}
+```
+
+- **Admin users** automatically get all permissions for all modules.
+- Reads from `localStorage.userMeta.permissions` (set on login).
+
+---
+
+## Frontend: Sidebar Visibility
+
+**File:** `components/layout/sidebar.tsx`
+
+The sidebar reads `menu_access` from stored permissions. If a user has no `menu_access` for a module, the link is hidden — even if they navigate directly to the URL, the backend will block them.
+
+```
+module has menu_access → link visible in sidebar
+module missing menu_access → link hidden
+```
+
+Special modules (`Dashboard`, `Settings`, `Profile`) show if the user has **any** permission for them.
+
+---
+
+## Backend: `@RequirePermissions` Decorator
+
+**File:** `crm-backend/src/common/decorators/permissions.decorator.ts`
+
+```typescript
+// Any one of these conditions being true = access granted
+@RequirePermissions(
+  { module: 'Students', action: 'view' },
+  { module: 'Students', action: 'view_all' }
+)
+@Get()
+findAll() { ... }
+```
+
+For **non-owner modules**, GET endpoints also accept `menu_access` as sufficient:
+```typescript
+@RequirePermissions(
+  { module: 'Academic Years', action: 'view' },
+  { module: 'Academic Years', action: 'view_all' },
+  { module: 'Academic Years', action: 'menu_access' }  // ← fallback for menu-only roles
+)
+```
+
+---
+
+## Database Schema
+
+```prisma
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  isSystem    Boolean      @default(false)
+  permissions Permission[]
+  userGroups  UserGroup[]
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  roleId String
+  module String  // e.g. "Students", "Academic Years"
+  action String  // "menu_access" | "view" | "view_all" | "add" | "edit" | "delete"
+  role   Role   @relation(...)
+  @@unique([roleId, module, action])
 }
 ```
 
-### Assignment Actions
-| Action | Admin | Team Lead | Sales Manager | Counselor | Viewer |
-|--------|-------|-----------|---------------|-----------|--------|
-| Assign Lead to Self | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Assign Lead to Others | ✅ | ✅ (team only) | ❌ | ❌ | ❌ |
-| Reassign Own Leads | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Reassign Others' Leads | ✅ | ✅ (team only) | ❌ | ❌ | ❌ |
+---
+
+## Roles Page (`/roles`)
+
+The roles page at `/roles` allows admins to create/edit roles and set permissions via a matrix table.
+
+### Permission Matrix Logic
+
+- ✅ Checking **Menu** (non-owner module) → auto-adds `view` too
+- ✅ Checking **any action** → auto-adds `menu_access`
+- ✅ Checking **any action** (no view yet) → auto-adds `view`
+- ❌ Unchecking **Menu** → removes ALL permissions for that module
+- ❌ Unchecking last **view/view_all** → removes ALL permissions for that module
+
+### Owner vs Non-Owner Modules
+
+| Module Type | View Own | View All |
+|-------------|----------|----------|
+| Owner-based (Students, Leads, Applications) | ✅ Configurable | ✅ Configurable |
+| Non-owner (Academic Years, Countries, etc.) | — (hidden) | — (hidden) |
 
 ---
 
-## Notes & Communication Permissions
+## System Roles
 
-### Who Can Add Notes?
-- **Assigned User**: Can always add notes to their assigned leads
-- **Team Lead**: Can add notes to any lead in their team
-- **Admin**: Can add notes to any lead
+| Role | Description |
+|------|-------------|
+| `admin` | Full access to everything (cannot be deleted) |
+| `staff` | Access to core modules (students, applications, leads) |
+| `agent` | View-only access to own students/applications |
 
-### Note Visibility
-```typescript
-interface Note {
-  id: string;
-  content: string;
-  createdBy: string;
-  createdAt: Date;
-  visibility: 'public' | 'team' | 'private';
-  // private: only creator and admins
-  // team: creator's team and admins
-  // public: everyone with lead access
-}
-```
-
-### Communication Actions
-| Action | Assigned User | Team Lead | Others | Viewer |
-|--------|--------------|-----------|---------|--------|
-| Add Note | ✅ | ✅ | ❌ | ❌ |
-| Edit Own Note | ✅ | ✅ | ✅ | ❌ |
-| Delete Own Note | ✅ | ✅ | ✅ | ❌ |
-| Delete Others' Notes | ❌ | ✅ | ❌ | ❌ |
-| Send Email | ✅ | ✅ | ❌ | ❌ |
-| Make Call | ✅ | ✅ | ❌ | ❌ |
-| View Email History | ✅ | ✅ | ✅ (team) | ✅ |
+> System roles (`isSystem: true`) cannot be renamed or deleted.
 
 ---
 
-## Document Permissions
+## Adding a New Module
 
-| Action | Assigned User | Team Lead | Others | Viewer |
-|--------|--------------|-----------|---------|--------|
-| Upload Document | ✅ | ✅ | ❌ | ❌ |
-| View Document | ✅ | ✅ | ✅ (team) | ✅ |
-| Download Document | ✅ | ✅ | ✅ (team) | ❌ |
-| Delete Document | ✅ | ✅ | ❌ | ❌ |
+See [`features/modules-config.md`](./modules-config.md) for the step-by-step guide.
 
 ---
 
-## Activity Tracking
+## Related Files
 
-All permission-controlled actions will be logged:
-```typescript
-interface ActivityLog {
-  id: string;
-  entityType: 'lead' | 'student' | 'agent';
-  entityId: string;
-  action: string; // 'assigned', 'note_added', 'email_sent', etc.
-  performedBy: string;
-  performedAt: Date;
-  details: Record<string, any>;
-}
-```
-
----
-
-## Implementation Priority
-
-### Phase 1: Core Permissions
-- [/] Basic role system (Admin, Manager, User)
-- [ ] Assigned user tracking (implemented)
-- [ ] Notes with user attribution
-- [ ] Basic visibility controls
-
-### Phase 2: Assignment System
-- [ ] Lead assignment dropdown (implemented)
-- [ ] Assignment rules configuration
-- [ ] Auto-assignment engine
-- [ ] Workload balancing
-
-### Phase 3: Advanced Permissions
-- [ ] Granular permission editor
-- [ ] Custom roles
-- [ ] Team-based permissions
-- [ ] Department hierarchies
-
-### Phase 4: Audit & Compliance
-- [ ] Complete activity logging
-- [ ] Permission audit trail
-- [ ] Compliance reports
-- [ ] Data access logs
-
----
-
-## Database Schema Changes Required
-
-```sql
--- Users table with roles
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255),
-  email VARCHAR(255) UNIQUE,
-  role VARCHAR(50), -- 'admin', 'team_lead', 'sales_manager', etc.
-  team_id UUID REFERENCES teams(id),
-  can_receive_leads BOOLEAN DEFAULT true,
-  daily_lead_limit INTEGER,
-  is_active BOOLEAN DEFAULT true
-);
-
--- Teams table
-CREATE TABLE teams (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255),
-  team_lead_id UUID REFERENCES users(id),
-  created_at TIMESTAMP
-);
-
--- Notes table
-CREATE TABLE lead_notes (
-  id UUID PRIMARY KEY,
-  lead_id UUID REFERENCES leads(id),
-  content TEXT,
-  created_by UUID REFERENCES users(id),
-  visibility VARCHAR(20) DEFAULT 'public',
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-);
-
--- Activity log
-CREATE TABLE activity_logs (
-  id UUID PRIMARY KEY,
-  entity_type VARCHAR(50),
-  entity_id UUID,
-  action VARCHAR(100),
-  performed_by UUID REFERENCES users(id),
-  performed_at TIMESTAMP,
-  details JSONB
-);
-```
-
----
-
-## Security Considerations
-
-1. **Row-Level Security (RLS)**: Implement PostgreSQL RLS for data isolation
-2. **API Middleware**: Check permissions before every write operation
-3. **Frontend Guards**: Hide UI elements user doesn't have permission for
-4. **Audit Logging**: Log all permission checks and access attempts
-5. **Session Management**: Refresh permissions on role/team changes
-
----
-
-## Current State (As Implemented)
-
-✅ **Completed:**
-- Assigned To dropdown in lead detail
-- Mock users data structure
-- Basic assignment change functionality
-- Console logging for assignment changes
-
-⏳ **Pending Backend:**
-- Actual permission checks
-- Role-based access control
-- Assignment rules engine
-- Activity logging
+| File | Purpose |
+|------|---------|
+| `lib/config/modules.ts` | Single source of truth for all modules |
+| `lib/hooks/use-permissions.ts` | Client-side permission check hook |
+| `components/layout/sidebar.tsx` | Navigation with menu_access filtering |
+| `app/(dashboard)/roles/page.tsx` | Roles management UI |
+| `crm-backend/src/common/guards/permissions.guard.ts` | Backend permission enforcement |
+| `crm-backend/src/common/decorators/permissions.decorator.ts` | `@RequirePermissions` decorator |
+| `crm-backend/prisma/seed-roles.ts` | Default roles seed data |

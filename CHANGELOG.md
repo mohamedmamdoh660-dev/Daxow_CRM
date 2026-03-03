@@ -2,7 +2,31 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Centralized Module Config (Single Source of Truth) 🏗️
+
+### New File: `lib/config/modules.ts`
+Single source of truth for all CRM modules. **To add a new module in the future:**
+1. Add one entry to `NAV_ITEMS` in `lib/config/modules.ts`
+2. Add `@RequirePermissions` in the backend controller
+3. Done — sidebar and roles matrix update automatically ✅
+
+### Refactored
+- **`sidebar.tsx`** — now imports `NAV_ITEMS` from config. No hardcoded navigation array.
+- **`roles/page.tsx`** — now imports `PERMISSION_MODULES` and `OWNER_BASED_MODULES` from config.
+  - `MODULES` list is auto-derived
+  - `VIEW_OWN_MODULES` is auto-derived (Students, Leads, Applications)
+
+### Module Config Fields
+| Field | Purpose |
+|-------|---------|
+| `permissionModule` | Must match backend `@RequirePermissions` module name |
+| `label` | Display name in sidebar and roles table |
+| `href` | Route path |
+| `icon` | Lucide icon component |
+| `ownerBased` | If true, shows View Own / View All in roles matrix |
+
 ## [2026-03-04] - Fix Empty Data for Non-Owner Modules 🔧
+
 
 ### Root Cause
 Modules without owner-based RBAC (Academic Years, Semesters, Countries & Cities) show `—` for View Own/View All in the roles UI. When a role only had `menu_access`, the backend rejected GET requests because it required `view` or `view_all`.
