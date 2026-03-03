@@ -39,7 +39,7 @@ export class AcademicYearsController {
     }
 
     @Get()
-    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' }, { module: 'Academic Years', action: 'menu_access' })
     @ApiOperation({ summary: 'Get all academic years' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -62,7 +62,7 @@ export class AcademicYearsController {
     }
 
     @Get(':id')
-    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' }, { module: 'Academic Years', action: 'menu_access' })
     @ApiOperation({ summary: 'Get academic year by ID' })
     @ApiResponse({ status: 200, description: 'Academic year found' })
     @ApiResponse({ status: 404, description: 'Academic year not found' })

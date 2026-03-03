@@ -39,7 +39,7 @@ export class SemestersController {
     }
 
     @Get()
-    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' }, { module: 'Academic Years', action: 'menu_access' })
     @ApiOperation({ summary: 'Get all semesters' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -62,7 +62,7 @@ export class SemestersController {
     }
 
     @Get(':id')
-    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' })
+    @RequirePermissions({ module: 'Academic Years', action: 'view' }, { module: 'Academic Years', action: 'view_all' }, { module: 'Academic Years', action: 'menu_access' })
     @ApiOperation({ summary: 'Get semester by ID' })
     @ApiResponse({ status: 200, description: 'Semester found' })
     @ApiResponse({ status: 404, description: 'Semester not found' })

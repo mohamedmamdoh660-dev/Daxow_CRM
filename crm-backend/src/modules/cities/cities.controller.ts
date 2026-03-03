@@ -35,7 +35,7 @@ export class CitiesController {
     }
 
     @Get()
-    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' }, { module: 'Countries & Cities', action: 'menu_access' })
     @ApiOperation({ summary: 'Get all cities' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'pageSize', required: false, type: Number })
@@ -61,7 +61,7 @@ export class CitiesController {
     }
 
     @Get(':id')
-    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' }, { module: 'Countries & Cities', action: 'menu_access' })
     @ApiOperation({ summary: 'Get city by ID' })
     @ApiResponse({ status: 200, description: 'City found' })
     @ApiResponse({ status: 404, description: 'City not found' })

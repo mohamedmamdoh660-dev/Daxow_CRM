@@ -52,6 +52,8 @@ function hasPermission(permissions: Permission[], module: string, action: string
     return permissions.some(p => p.module === module && p.action === action);
 }
 function togglePerm(permissions: Permission[], module: string, action: string): Permission[] {
+    const isOwnerModule = VIEW_OWN_MODULES.includes(module);
+
     if (hasPermission(permissions, module, action)) {
         const remainingPerms = permissions.filter(p => !(p.module === module && p.action === action));
         // If unchecking menu_access, clear ALL permissions for this module
@@ -65,6 +67,17 @@ function togglePerm(permissions: Permission[], module: string, action: string): 
         }
         return remainingPerms;
     }
+
+    // For non-owner modules: checking menu_access also auto-adds 'view'
+    // because the UI hides View Own/View All for these modules (shows —)
+    if (action === 'menu_access' && !isOwnerModule) {
+        const perms = [...permissions, { module, action: 'menu_access' }];
+        if (!hasPermission(perms, module, 'view')) {
+            return [...perms, { module, action: 'view' }];
+        }
+        return perms;
+    }
+
     // Auto-add menu_access when adding any permission
     if (action !== 'menu_access' && !hasPermission(permissions, module, 'menu_access')) {
         permissions = [...permissions, { module, action: 'menu_access' }];

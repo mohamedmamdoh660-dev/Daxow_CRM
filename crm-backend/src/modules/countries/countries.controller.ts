@@ -38,7 +38,7 @@ export class CountriesController {
     }
 
     @Get()
-    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' }, { module: 'Countries & Cities', action: 'menu_access' })
     @ApiOperation({ summary: 'Get all countries' })
     @ApiResponse({ status: 200, description: 'List of all active countries' })
     findAll(
@@ -59,7 +59,7 @@ export class CountriesController {
     }
 
     @Get(':id')
-    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' })
+    @RequirePermissions({ module: 'Countries & Cities', action: 'view' }, { module: 'Countries & Cities', action: 'view_all' }, { module: 'Countries & Cities', action: 'menu_access' })
     @ApiOperation({ summary: 'Get a country by ID' })
     @ApiResponse({ status: 200, description: 'Country found' })
     @ApiResponse({ status: 404, description: 'Country not found' })

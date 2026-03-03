@@ -8,7 +8,7 @@ const MODULES = [
     'Academic Years', 'Faculties', 'Countries & Cities', 'Languages & Titles',
     'Agents', 'User Management', 'Roles & Permissions', 'Settings', 'Profile'
 ];
-const ACTIONS = ['view', 'add', 'edit', 'delete', 'export', 'import'];
+const ACTIONS = ['menu_access', 'view', 'view_all', 'add', 'edit', 'delete', 'export', 'import'];
 
 async function main() {
     console.log('🌱 Seeding default groups...');
@@ -32,7 +32,7 @@ async function main() {
 
     // Staff group — view/add/edit on core modules, no admin modules
     const staffModules = ['Dashboard', 'Students', 'Applications', 'Leads', 'Programs', 'Academic Years', 'Faculties', 'Countries & Cities', 'Languages & Titles', 'Agents', 'Profile'];
-    const staffActions = ['view', 'add', 'edit'];
+    const staffActions = ['menu_access', 'view', 'view_all', 'add', 'edit'];
     const staffGroup = await prisma.role.upsert({
         where: { name: 'staff' },
         update: { description: 'Standard staff access', isSystem: true },
@@ -56,9 +56,13 @@ async function main() {
         create: { name: 'agent', description: 'External agent access', isSystem: true },
     });
     const agentPerms = [
+        { module: 'Dashboard', action: 'menu_access' },
         { module: 'Dashboard', action: 'view' },
+        { module: 'Applications', action: 'menu_access' },
         { module: 'Applications', action: 'view' },
+        { module: 'Students', action: 'menu_access' },
         { module: 'Students', action: 'view' },
+        { module: 'Profile', action: 'menu_access' },
         { module: 'Profile', action: 'view' },
         { module: 'Profile', action: 'edit' },
     ];

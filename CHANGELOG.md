@@ -2,7 +2,28 @@
 
 All notable changes to the Admission CRM project will be documented in this file.
 
+## [2026-03-04] - Full RBAC Audit: Add/Edit/Delete Guards 🔐
+
+### Fixed — Unguarded **Add** Buttons (6 pages)
+All pages now use `usePermissions` with correct backend-aligned module names:
+
+| Page | usePermissions Module |
+|------|-----------------------|
+| `cities/page.tsx` | `Countries & Cities` |
+| `countries/page.tsx` | `Countries & Cities` |
+| `semesters/page.tsx` | `Academic Years` |
+| `specialties/page.tsx` | `Faculties` |
+| `languages/page.tsx` | `Languages & Titles` |
+| `titles/page.tsx` | `Languages & Titles` |
+
+### Confirmed **Edit/Delete** Guards ✅
+All row-actions components have `canEdit`/`canDelete` guards (implemented in previous sessions):
+- `leads-row-actions`, `faculties-row-actions`, `degrees-row-actions`, `academic-years-row-actions`
+- `cities-row-actions`, `semesters-row-actions`, `specialties-row-actions`
+- `countries-row-actions`, `languages-row-actions`, `titles-row-actions`
+
 ## [2026-03-04] - Fix Navigation Menu Visibility 🔧
+
 
 ### Fixed
 - **Root cause identified:** Module names in sidebar, row-actions, and roles page were inconsistent with what the backend stores in permissions
