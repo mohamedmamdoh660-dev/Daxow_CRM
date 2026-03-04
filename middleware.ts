@@ -5,7 +5,13 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_ROUTES = ['/', '/login'];
 
 // API routes to allow (authentication routes)
-const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/logout'];
+const PUBLIC_API_ROUTES = [
+    '/api/auth/login',
+    '/api/auth/logout',
+    '/api/webhook-test',    // local test listener — no auth needed
+    '/api/webhook-proxy',   // called from authenticated browser sessions
+];
+
 
 /**
  * 🔐 Security: Validate JWT token structure and expiration

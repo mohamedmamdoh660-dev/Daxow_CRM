@@ -260,7 +260,7 @@ function WebhookForm({ initial, onSave, onCancel }: {
                 </div>
             </div>
 
-            <div className="flex gap-3 px-6 py-4 border-t">
+            <div className="flex gap-3 px-6 py-4 border-t flex-wrap">
                 <Button
                     disabled={!isValid}
                     onClick={() => onSave({ name: name.trim(), description: description.trim() || undefined, method, url: url.trim(), module, bodyType, bodyContent: bodyContent.trim() || undefined, moduleParams, customParams })}
@@ -268,6 +268,49 @@ function WebhookForm({ initial, onSave, onCancel }: {
                     <Save className="h-4 w-4 mr-2" /> Save Webhook
                 </Button>
                 <Button variant="outline" onClick={onCancel}><X className="h-4 w-4 mr-2" />Cancel</Button>
+
+                {/* Test Webhook — sends minimal payload to diagnose connectivity/config issues */}
+                {url.trim() && (
+                    <Button
+                        variant="outline"
+                        type="button"
+                        className="ml-auto gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                        onClick={async () => {
+                            const { toast: t } = await import('sonner');
+                            const toastId = t.loading('Testing webhook...', { description: url.trim() });
+                            try {
+                                const res = await fetch('/api/webhook-proxy', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        url: url.trim(),
+                                        method,
+                                        body: method === 'GET' ? undefined : { test: true, source: 'Daxow CRM' },
+                                    }),
+                                });
+                                const result = await res.json();
+                                const bodyStr = result.body
+                                    ? (typeof result.body === 'string' ? result.body : JSON.stringify(result.body))
+                                    : '';
+                                if (result.ok) {
+                                    t.success(`✅ HTTP ${result.status} — Connection OK!`, {
+                                        id: toastId, description: `${result.duration}ms${bodyStr ? ' — ' + bodyStr.slice(0, 100) : ''}`, duration: 6000,
+                                    });
+                                } else {
+                                    t.error(`❌ HTTP ${result.status} ${result.statusText}`, {
+                                        id: toastId,
+                                        description: bodyStr ? `n8n says: ${bodyStr.slice(0, 200)}` : result.error || 'No response body',
+                                        duration: 10000,
+                                    });
+                                }
+                            } catch (err: any) {
+                                t.error('Test failed', { id: toastId, description: err.message, duration: 8000 });
+                            }
+                        }}
+                    >
+                        <ExternalLink className="h-4 w-4" /> Test Webhook
+                    </Button>
+                )}
             </div>
         </div>
     );

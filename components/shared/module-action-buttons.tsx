@@ -157,9 +157,18 @@ export function ModuleActionButtons({
                     description: `HTTP ${result.status} • ${duration}ms`,
                 });
             } else {
+                // Show the full n8n response body so we know WHY it rejected
+                const n8nBody = result.body
+                    ? (typeof result.body === 'string' ? result.body : JSON.stringify(result.body))
+                    : '';
+                const errorMsg = result.error || `HTTP ${result.status} ${result.statusText}`;
+                const description = n8nBody ? `${errorMsg}\n↳ ${n8nBody.slice(0, 200)}` : errorMsg;
+
+                console.error('[ModuleActionButtons] n8n response body:', result.body);
                 sonnerToast.error(`${btn.name} — Failed`, {
                     id: toastId,
-                    description: result.error || `HTTP ${result.status} ${result.statusText}`,
+                    description,
+                    duration: 8000,
                 });
             }
 

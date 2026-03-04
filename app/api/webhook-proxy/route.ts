@@ -14,32 +14,39 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'url and method are required' }, { status: 400 });
         }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        const sentBody = !['GET', 'HEAD'].includes(method.toUpperCase()) && body !== undefined
+            ? (typeof body === 'string' ? body : JSON.stringify(body))
+            : undefined;
 
-        const fetchOptions: RequestInit = {
+        console.log('\n🔁 [webhook-proxy] Outgoing request:');
+        console.log('   URL    :', url);
+        console.log('   Method :', method);
+        console.log('   Body   :', sentBody?.slice(0, 500));
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        const res = await fetch(url, {
             method,
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain, */*',
+                'User-Agent': 'Daxow-CRM/1.0',
                 ...customHeaders,
             },
+            body: sentBody,
             signal: controller.signal,
-        };
-
-        if (!['GET', 'HEAD'].includes(method.toUpperCase()) && body) {
-            fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
-        }
-
-        const res = await fetch(url, fetchOptions);
+        });
         clearTimeout(timeout);
 
         const duration = Date.now() - startTime;
+
+        const rawText = await res.text().catch(() => '');
         let responseBody: any;
-        try {
-            responseBody = await res.json();
-        } catch {
-            responseBody = await res.text().catch(() => '');
-        }
+        try { responseBody = JSON.parse(rawText); } catch { responseBody = rawText; }
+
+        console.log('   Status :', res.status, res.statusText);
+        console.log('   Response:', rawText.slice(0, 500));
 
         return NextResponse.json({
             ok: res.ok,
@@ -51,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         const duration = Date.now() - startTime;
+        console.error('[webhook-proxy] Error:', error.message);
         if (error.name === 'AbortError') {
             return NextResponse.json({ ok: false, status: 408, statusText: 'Request Timeout', duration, error: 'Webhook timed out after 15 seconds' }, { status: 200 });
         }
