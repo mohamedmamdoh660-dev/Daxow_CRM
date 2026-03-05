@@ -16,8 +16,9 @@ export const MODULE_FIELDS: Record<string, { key: string; label: string }[]> = {
         { key: 'lastName', label: 'Last Name' },
         { key: 'email', label: 'Email' },
         { key: 'phone', label: 'Phone' },
-        { key: 'nationality', label: 'Nationality' },
+        { key: 'nationalityName', label: 'Nationality' },   // API returns nationalityName (resolved string)
         { key: 'status', label: 'Status' },
+        { key: 'gender', label: 'Gender' },
         { key: 'createdAt', label: 'Created At' },
     ],
     'Leads': [
@@ -33,18 +34,21 @@ export const MODULE_FIELDS: Record<string, { key: string; label: string }[]> = {
     'Applications': [
         { key: 'id', label: 'ID' },
         { key: 'status', label: 'Status' },
+        { key: 'stage', label: 'Stage' },
         { key: 'studentId', label: 'Student ID' },
         { key: 'programId', label: 'Program ID' },
         { key: 'createdAt', label: 'Created At' },
     ],
     'Agents': [
         { key: 'id', label: 'ID' },
-        { key: 'name', label: 'Name' },
+        { key: 'companyName', label: 'Company Name' },
+        { key: 'contactPerson', label: 'Contact Person' },
         { key: 'email', label: 'Email' },
         { key: 'phone', label: 'Phone' },
         { key: 'status', label: 'Status' },
     ],
 };
+
 
 // ── Webhook ───────────────────────────────────────────────────────────────────
 export interface WebhookParam {
@@ -73,11 +77,19 @@ export interface Webhook {
 
 // ── Button Condition ──────────────────────────────────────────────────────────
 export type ConditionOperator = 'is' | 'is_not' | 'contains' | 'not_contains' | 'is_empty' | 'is_not_empty';
+export type ConditionLogic = 'and' | 'or';
 
-export interface ButtonCondition {
-    field: string;              // e.g. 'status', 'nationality'
+/** A single condition row: field + operator + value */
+export interface ButtonConditionRule {
+    field: string;
     operator: ConditionOperator;
-    value?: string;             // optional (not needed for is_empty/is_not_empty)
+    value?: string;
+}
+
+/** Multiple rules combined with AND or OR */
+export interface ButtonCondition {
+    logic: ConditionLogic;      // 'and' | 'or'
+    rules: ButtonConditionRule[];
 }
 
 export const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
@@ -88,6 +100,18 @@ export const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] 
     { value: 'is_empty', label: 'is empty' },
     { value: 'is_not_empty', label: 'is not empty' },
 ];
+
+/** Migrate old single-field condition to new rules format if needed */
+export function normalizeCondition(condition: any): ButtonCondition | undefined {
+    if (!condition) return undefined;
+    // Already new format
+    if (condition.rules && Array.isArray(condition.rules)) return condition as ButtonCondition;
+    // Old format: { field, operator, value }
+    if (condition.field) {
+        return { logic: 'and', rules: [{ field: condition.field, operator: condition.operator, value: condition.value }] };
+    }
+    return undefined;
+}
 
 // ── Custom Button ─────────────────────────────────────────────────────────────
 export interface CustomButton {

@@ -5,26 +5,59 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Webhook as WebhookIcon, Code2, Globe } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 import {
-    loadButtons, loadWebhooks, appendLog,
+    loadButtons, loadWebhooks, appendLog, normalizeCondition,
     type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType, type ButtonCondition,
 } from '@/lib/types/buttons-webhooks';
 import { cn } from '@/lib/utils';
 
-/** Evaluate if a record satisfies a button condition */
-function evaluateCondition(condition: ButtonCondition | undefined, record: Record<string, any>): boolean {
-    if (!condition) return true;
-    const { field, operator, value = '' } = condition;
-    const recordVal = String(record[field] ?? '').toLowerCase().trim();
-    const condVal = value.toLowerCase().trim();
-    switch (operator) {
-        case 'is': return recordVal === condVal;
-        case 'is_not': return recordVal !== condVal;
-        case 'contains': return recordVal.includes(condVal);
-        case 'not_contains': return !recordVal.includes(condVal);
-        case 'is_empty': return recordVal === '';
-        case 'is_not_empty': return recordVal !== '';
-        default: return true;
+/** Resolve a record field value to a comparable string — handles nested relation objects */
+function resolveFieldValue(record: Record<string, any>, field: string): string {
+    // Alias fallbacks — old field keys → actual API keys
+    const FIELD_ALIASES: Record<string, string[]> = {
+        nationality: ['nationalityName', 'nationality'],
+        name: ['companyName', 'contactPerson', 'fullName', 'name'],
+    };
+    const candidates = FIELD_ALIASES[field] ? FIELD_ALIASES[field] : [field];
+
+    for (const key of candidates) {
+        const val = record[key];
+        if (val === null || val === undefined) continue;
+        if (typeof val === 'string' && val !== '') return val;
+        if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+        if (typeof val === 'object' && !Array.isArray(val)) {
+            const nested = String(val.name ?? val.label ?? val.title ?? val.value ?? val.id ?? '');
+            if (nested) return nested;
+        }
+        if (Array.isArray(val)) return val.map((v: any) => (typeof v === 'object' ? v.name ?? v.label ?? v.id : v)).join(', ');
     }
+    return '';
+}
+
+/** Evaluate if a record satisfies a button condition (supports multi-rule AND/OR) */
+function evaluateCondition(rawCondition: any, record: Record<string, any>): boolean {
+    if (!rawCondition) return true;
+    const condition = normalizeCondition(rawCondition);
+    if (!condition || condition.rules.length === 0) return true;
+
+    const evalRule = (rule: { field: string; operator: string; value?: string }) => {
+        const recordVal = resolveFieldValue(record, rule.field).toLowerCase().trim();
+        const condVal = (rule.value ?? '').toLowerCase().trim();
+        switch (rule.operator) {
+            case 'is': return recordVal === condVal;
+            case 'is_not': return recordVal !== condVal;
+            case 'contains': return recordVal.includes(condVal);
+            case 'not_contains': return !recordVal.includes(condVal);
+            case 'is_empty': return recordVal === '';
+            case 'is_not_empty': return recordVal !== '';
+            default: return true;
+        }
+    };
+
+    if (condition.logic === 'or') {
+        return condition.rules.some(evalRule);
+    }
+    // default: AND
+    return condition.rules.every(evalRule);
 }
 
 
@@ -50,10 +83,11 @@ export function ModuleActionButtons({
     page,
     className,
 }: ModuleActionButtonsProps) {
-    const [buttons, setButtons] = useState<CustomButton[]>([]);
+    const [allModuleButtons, setAllModuleButtons] = useState<CustomButton[]>([]);
     const [webhooks, setWebhooks] = useState<Webhook[]>([]);
     const [loading, setLoading] = useState<Record<string, boolean>>({});
 
+    // Load buttons once (no record dependency to avoid infinite loops)
     useEffect(() => {
         const allButtons = loadButtons();
         const moduleButtons = (allButtons[module] || []).filter((b: CustomButton) => {
@@ -66,16 +100,24 @@ export function ModuleActionButtons({
                 const lRole = userRole.toLowerCase();
                 if (!b.roles.some(r => r.toLowerCase() === lRole)) return false;
             }
-            // Condition check against current record
-            if (!evaluateCondition(b.condition, record)) return false;
             return true;
         });
-        setButtons(moduleButtons);
+        setAllModuleButtons(moduleButtons);
         setWebhooks(loadWebhooks());
+        console.log('[ModuleActionButtons] loaded buttons:', moduleButtons.length, moduleButtons.map((b: CustomButton) => b.name));
+    }, [module, userRole, position, page]);
 
-        console.log('[ModuleActionButtons] module:', module, 'position:', position, 'page:', page);
-        console.log('[ModuleActionButtons] buttons found:', moduleButtons.length, moduleButtons.map((b: CustomButton) => b.name));
-    }, [module, userRole, position, page, record]);
+    // Apply condition filter at render time (reactive to record changes)
+    const buttons = allModuleButtons.filter(b => {
+        const pass = evaluateCondition(b.condition, record);
+        if (b.condition) {
+            const norm = normalizeCondition(b.condition);
+            console.log(`[Condition] btn="${b.name}" rules=${norm?.rules.length} logic=${norm?.logic} → ${pass ? '✅ SHOW' : '❌ HIDE'}`);
+        }
+        return pass;
+    });
+
+
 
 
     if (buttons.length === 0) return null;

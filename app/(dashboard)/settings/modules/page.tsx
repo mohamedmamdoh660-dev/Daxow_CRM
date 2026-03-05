@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { NAV_ITEMS } from '@/lib/config/modules';
 import {
     Search, Plus, Edit2, Trash2, Save, X, ChevronRight,
-    CheckSquare, Webhook as WebhookIcon, Code2, Globe, Loader2
+    CheckSquare, Webhook as WebhookIcon, Code2, Globe, Loader2, Trash
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +22,9 @@ import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
     loadButtons, saveButtons, loadWebhooks,
-    MODULE_FIELDS, CONDITION_OPERATORS,
+    MODULE_FIELDS, CONDITION_OPERATORS, normalizeCondition,
     type CustomButton, type Webhook, type ActionType, type PageType, type PositionType,
-    type ButtonCondition, type ConditionOperator,
+    type ButtonCondition, type ButtonConditionRule, type ConditionOperator, type ConditionLogic,
 } from '@/lib/types/buttons-webhooks';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -49,8 +49,10 @@ const ACTION_COLORS: Record<ActionType, string> = {
     function: 'bg-blue-100 text-blue-700 border-blue-200',
     url: 'bg-green-100 text-green-700 border-green-200',
 };
-
 const DEFAULT_ROLES = ['admin', 'staff', 'agent'];
+
+// ── Empty rule factory ──────────────────────────────────────────────────────────
+const emptyRule = (): ButtonConditionRule => ({ field: '', operator: 'is', value: '' });
 
 // ── Coming Soon Tab ────────────────────────────────────────────────────────────
 function ComingSoonTab({ tab }: { tab: string }) {
@@ -61,6 +63,98 @@ function ComingSoonTab({ tab }: { tab: string }) {
             </div>
             <p className="text-lg font-medium mb-1">{tab}</p>
             <p className="text-sm opacity-60">This section is coming soon</p>
+        </div>
+    );
+}
+
+// ── Single Condition Row ───────────────────────────────────────────────────────
+interface ConditionRowProps {
+    rule: ButtonConditionRule;
+    moduleKey: string;
+    onChange: (rule: ButtonConditionRule) => void;
+    onRemove: () => void;
+    canRemove: boolean;
+}
+
+function ConditionRow({ rule, moduleKey, onChange, onRemove, canRemove }: ConditionRowProps) {
+    const [fieldValues, setFieldValues] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+    const moduleFields = MODULE_FIELDS[moduleKey] || [];
+    const needsValue = !['is_empty', 'is_not_empty'].includes(rule.operator);
+
+    useEffect(() => {
+        if (!rule.field) { setFieldValues([]); return; }
+        setLoading(true);
+        fetch(`/api/field-values?module=${moduleKey}&field=${rule.field}`)
+            .then(r => r.json())
+            .then(d => setFieldValues(d.values || []))
+            .catch(() => setFieldValues([]))
+            .finally(() => setLoading(false));
+    }, [rule.field, moduleKey]);
+
+    return (
+        <div className="flex items-center gap-2 flex-wrap">
+            {/* Field */}
+            <Select value={rule.field} onValueChange={v => onChange({ ...rule, field: v, value: '' })}>
+                <SelectTrigger className="w-44 bg-white text-sm h-9">
+                    <SelectValue placeholder="Select field..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {moduleFields.length > 0 ? moduleFields.map(f => (
+                        <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
+                    )) : <div className="p-2 text-xs text-muted-foreground">No fields for this module</div>}
+                </SelectContent>
+            </Select>
+
+            {/* Operator */}
+            <Select value={rule.operator} onValueChange={v => onChange({ ...rule, operator: v as ConditionOperator })}>
+                <SelectTrigger className="w-36 bg-white text-sm h-9">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {CONDITION_OPERATORS.map(op => (
+                        <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            {/* Value */}
+            {needsValue && rule.field && (
+                loading ? (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground px-2 h-9">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                    </div>
+                ) : fieldValues.length > 0 ? (
+                    <Select value={rule.value || ''} onValueChange={v => onChange({ ...rule, value: v })}>
+                        <SelectTrigger className="w-44 bg-white text-sm h-9">
+                            <SelectValue placeholder="Select value..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {fieldValues.map(v => (
+                                <SelectItem key={v} value={v}>{v}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <Input
+                        placeholder="Enter value..."
+                        value={rule.value || ''}
+                        onChange={e => onChange({ ...rule, value: e.target.value })}
+                        className="w-40 bg-white text-sm h-9"
+                    />
+                )
+            )}
+
+            {/* Remove */}
+            {canRemove && (
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                    <Trash className="h-3.5 w-3.5" />
+                </button>
+            )}
         </div>
     );
 }
@@ -89,14 +183,11 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
 
     // Condition state
     const [useCondition, setUseCondition] = useState(!!initial?.condition);
-    const [condField, setCondField] = useState(initial?.condition?.field || '');
-    const [condOperator, setCondOperator] = useState<ConditionOperator>(initial?.condition?.operator || 'is');
-    const [condValue, setCondValue] = useState(initial?.condition?.value || '');
-    const [fieldValues, setFieldValues] = useState<string[]>([]);
-    const [loadingValues, setLoadingValues] = useState(false);
-
-    const moduleFields = MODULE_FIELDS[moduleKey] || [];
-    const needsValue = !['is_empty', 'is_not_empty'].includes(condOperator);
+    const normalized = normalizeCondition(initial?.condition);
+    const [logic, setLogic] = useState<ConditionLogic>(normalized?.logic || 'and');
+    const [rules, setRules] = useState<ButtonConditionRule[]>(
+        normalized?.rules?.length ? normalized.rules : [emptyRule()]
+    );
 
     useEffect(() => {
         setWebhooks(loadWebhooks());
@@ -104,17 +195,6 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
             if (Array.isArray(data)) setRoles(data.map((r: any) => r.name));
         }).catch(() => { });
     }, []);
-
-    // Fetch field values dynamically when condField changes
-    useEffect(() => {
-        if (!condField || !useCondition) { setFieldValues([]); return; }
-        setLoadingValues(true);
-        fetch(`/api/field-values?module=${moduleKey}&field=${condField}`)
-            .then(r => r.json())
-            .then(d => setFieldValues(d.values || []))
-            .catch(() => setFieldValues([]))
-            .finally(() => setLoadingValues(false));
-    }, [condField, moduleKey, useCondition]);
 
     const toggleRole = (role: string) => {
         if (role === 'all') { setSelectedRoles(['all']); return; }
@@ -125,6 +205,12 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
         });
     };
 
+    const updateRule = (idx: number, updated: ButtonConditionRule) => {
+        setRules(prev => prev.map((r, i) => i === idx ? updated : r));
+    };
+    const removeRule = (idx: number) => setRules(prev => prev.filter((_, i) => i !== idx));
+    const addRule = () => setRules(prev => [...prev, emptyRule()]);
+
     const ACTION_PLACEHOLDER: Record<ActionType, string> = {
         webhook: 'Select a configured webhook...',
         function: 'my_function_name',
@@ -134,8 +220,10 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
     const isValid = !!(name.trim() && actionValue.trim());
 
     const buildCondition = (): ButtonCondition | undefined => {
-        if (!useCondition || !condField || !condOperator) return undefined;
-        return { field: condField, operator: condOperator, value: needsValue ? condValue : undefined };
+        if (!useCondition) return undefined;
+        const validRules = rules.filter(r => r.field && r.operator);
+        if (validRules.length === 0) return undefined;
+        return { logic, rules: validRules };
     };
 
     return (
@@ -258,10 +346,7 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
                     <Label>Button Visibility — Which roles can see this button</Label>
                     <div className="flex flex-wrap gap-3 mt-2">
                         <label className="flex items-center gap-2 cursor-pointer">
-                            <Checkbox
-                                checked={selectedRoles.includes('all')}
-                                onCheckedChange={() => toggleRole('all')}
-                            />
+                            <Checkbox checked={selectedRoles.includes('all')} onCheckedChange={() => toggleRole('all')} />
                             <span className="text-sm font-medium">All Roles</span>
                         </label>
                         {roles.map(role => (
@@ -278,11 +363,12 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
                 </div>
 
                 {/* ── Condition Builder ─────────────────────────────────────────── */}
-                <div className="space-y-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                    {/* Header row */}
                     <div className="flex items-center justify-between">
                         <div>
                             <Label className="text-amber-800">Show Condition</Label>
-                            <p className="text-xs text-amber-600 mt-0.5">Only show this button when a field matches a value</p>
+                            <p className="text-xs text-amber-600 mt-0.5">Only show this button when conditions are met</p>
                         </div>
                         <div className="flex">
                             <button
@@ -303,68 +389,51 @@ function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: Butto
                     </div>
 
                     {useCondition && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {/* Field picker */}
-                            <Select value={condField} onValueChange={v => { setCondField(v); setCondValue(''); }}>
-                                <SelectTrigger className="w-44 bg-white">
-                                    <SelectValue placeholder="Select field..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {moduleFields.length > 0 ? moduleFields.map(f => (
-                                        <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
-                                    )) : (
-                                        <div className="p-2 text-xs text-muted-foreground">No fields mapped for this module</div>
+                        <div className="space-y-2">
+                            {rules.map((rule, idx) => (
+                                <div key={idx} className="space-y-2">
+                                    {/* AND / OR badge between rules */}
+                                    {idx > 0 && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-px bg-amber-200" />
+                                            <div className="flex rounded-md overflow-hidden border border-amber-300">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLogic('and')}
+                                                    className={cn('px-3 py-0.5 text-xs font-semibold transition-colors',
+                                                        logic === 'and' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                                                    )}
+                                                >AND</button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLogic('or')}
+                                                    className={cn('px-3 py-0.5 text-xs font-semibold transition-colors border-l border-amber-300',
+                                                        logic === 'or' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                                                    )}
+                                                >OR</button>
+                                            </div>
+                                            <div className="flex-1 h-px bg-amber-200" />
+                                        </div>
                                     )}
-                                </SelectContent>
-                            </Select>
-
-                            {/* Operator */}
-                            <Select value={condOperator} onValueChange={v => setCondOperator(v as ConditionOperator)}>
-                                <SelectTrigger className="w-36 bg-white">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {CONDITION_OPERATORS.map(op => (
-                                        <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            {/* Value — dynamic dropdown or free text */}
-                            {needsValue && condField && (
-                                loadingValues ? (
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground px-2">
-                                        <Loader2 className="h-3 w-3 animate-spin" /> Loading...
-                                    </div>
-                                ) : fieldValues.length > 0 ? (
-                                    <Select value={condValue} onValueChange={setCondValue}>
-                                        <SelectTrigger className="w-44 bg-white">
-                                            <SelectValue placeholder="Select value..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {fieldValues.map(v => (
-                                                <SelectItem key={v} value={v}>{v}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <Input
-                                        placeholder="Enter value..."
-                                        value={condValue}
-                                        onChange={e => setCondValue(e.target.value)}
-                                        className="w-44 bg-white text-sm"
+                                    <ConditionRow
+                                        rule={rule}
+                                        moduleKey={moduleKey}
+                                        onChange={updated => updateRule(idx, updated)}
+                                        onRemove={() => removeRule(idx)}
+                                        canRemove={rules.length > 1}
                                     />
-                                )
-                            )}
+                                </div>
+                            ))}
 
-                            {/* Preview label */}
-                            {condField && condOperator && (needsValue ? condValue : true) && (
-                                <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">
-                                    Show when <strong>{moduleFields.find(f => f.key === condField)?.label || condField}</strong>{' '}
-                                    {CONDITION_OPERATORS.find(o => o.value === condOperator)?.label}
-                                    {needsValue && <> <strong>{condValue}</strong></>}
-                                </span>
-                            )}
+                            {/* Add condition row */}
+                            <button
+                                type="button"
+                                onClick={addRule}
+                                className="flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-900 font-medium mt-1 hover:underline"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Add condition
+                            </button>
                         </div>
                     )}
                 </div>
@@ -472,45 +541,51 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {buttons.map(btn => (
-                        <div key={btn.id} className="flex items-center justify-between p-4 bg-white rounded-xl border hover:shadow-sm transition-shadow">
-                            <div className="flex items-center gap-4">
-                                <div className={cn('flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border', ACTION_COLORS[btn.actionType])}>
-                                    {ACTION_ICONS[btn.actionType]}
-                                    {ACTION_LABELS[btn.actionType]}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-sm text-gray-800">{btn.name}</p>
-                                    {btn.description && <p className="text-xs text-muted-foreground mt-0.5">{btn.description}</p>}
-                                    <div className="flex gap-1 mt-1 flex-wrap">
-                                        <Badge variant="outline" className="text-xs">
-                                            {btn.page === 'in_record' ? 'In Record' : btn.page === 'list_view' ? 'List View' : 'Both Pages'}
-                                        </Badge>
-                                        <Badge variant="outline" className="text-xs">
-                                            {btn.position === 'details' ? 'Details' : btn.position === 'header' ? 'Header' : 'Both Positions'}
-                                        </Badge>
-                                        <Badge variant="outline" className="text-xs">
-                                            {btn.roles.includes('all') ? 'All Roles' : btn.roles.join(', ')}
-                                        </Badge>
-                                        {btn.condition && (
-                                            <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
-                                                When {btn.condition.field} {btn.condition.operator.replace('_', ' ')} {btn.condition.value || ''}
+                    {buttons.map(btn => {
+                        const cond = normalizeCondition(btn.condition);
+                        return (
+                            <div key={btn.id} className="flex items-center justify-between p-4 bg-white rounded-xl border hover:shadow-sm transition-shadow">
+                                <div className="flex items-center gap-4">
+                                    <div className={cn('flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border', ACTION_COLORS[btn.actionType])}>
+                                        {ACTION_ICONS[btn.actionType]}
+                                        {ACTION_LABELS[btn.actionType]}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm text-gray-800">{btn.name}</p>
+                                        {btn.description && <p className="text-xs text-muted-foreground mt-0.5">{btn.description}</p>}
+                                        <div className="flex gap-1 mt-1 flex-wrap">
+                                            <Badge variant="outline" className="text-xs">
+                                                {btn.page === 'in_record' ? 'In Record' : btn.page === 'list_view' ? 'List View' : 'Both Pages'}
                                             </Badge>
-                                        )}
+                                            <Badge variant="outline" className="text-xs">
+                                                {btn.position === 'details' ? 'Details' : btn.position === 'header' ? 'Header' : 'Both Positions'}
+                                            </Badge>
+                                            <Badge variant="outline" className="text-xs">
+                                                {btn.roles.includes('all') ? 'All Roles' : btn.roles.join(', ')}
+                                            </Badge>
+                                            {cond && cond.rules.length > 0 && (
+                                                <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+                                                    {cond.rules.length === 1
+                                                        ? `When ${cond.rules[0].field} ${cond.rules[0].operator.replace('_', ' ')} ${cond.rules[0].value || ''}`
+                                                        : `${cond.rules.length} conditions (${cond.logic.toUpperCase()})`
+                                                    }
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch checked={btn.isActive} onCheckedChange={() => handleToggle(btn.id)} />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingId(btn.id)}>
+                                        <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(btn.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Switch checked={btn.isActive} onCheckedChange={() => handleToggle(btn.id)} />
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingId(btn.id)}>
-                                    <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(btn.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -522,9 +597,7 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteId && handleDelete(deleteId)} className="bg-destructive hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={() => deleteId && handleDelete(deleteId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -545,7 +618,6 @@ export default function ModulesSettingsPage() {
 
     return (
         <div className="flex h-full bg-[#f5f6fa]">
-            {/* Left Sidebar */}
             <aside className="w-56 border-r bg-white flex flex-col shrink-0">
                 <div className="p-3 border-b">
                     <div className="relative">
@@ -572,7 +644,6 @@ export default function ModulesSettingsPage() {
                 </nav>
             </aside>
 
-            {/* Right Panel */}
             <main className="flex-1 flex flex-col overflow-hidden">
                 <div className="bg-white border-b px-6 pt-5 pb-0">
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">{selectedModule.label}</h2>
