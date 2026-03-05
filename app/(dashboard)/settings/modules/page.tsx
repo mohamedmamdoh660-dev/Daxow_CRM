@@ -22,10 +22,12 @@ import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
     loadButtons, saveButtons, loadWebhooks,
-    MODULE_FIELDS, CONDITION_OPERATORS, normalizeCondition,
+    CONDITION_OPERATORS, normalizeCondition,
     type CustomButton, type Webhook, type ActionType, type PageType, type PositionType,
     type ButtonCondition, type ButtonConditionRule, type ConditionOperator, type ConditionLogic,
 } from '@/lib/types/buttons-webhooks';
+
+type ModuleField = { key: string; label: string; fieldType: string };
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const UNIQUE_MODULES = NAV_ITEMS.reduce<{ module: string; label: string }[]>((acc, item) => {
@@ -78,9 +80,21 @@ interface ConditionRowProps {
 
 function ConditionRow({ rule, moduleKey, onChange, onRemove, canRemove }: ConditionRowProps) {
     const [fieldValues, setFieldValues] = useState<string[]>([]);
+    const [moduleFields, setModuleFields] = useState<ModuleField[]>([]);
+    const [loadingFields, setLoadingFields] = useState(false);
     const [loading, setLoading] = useState(false);
-    const moduleFields = MODULE_FIELDS[moduleKey] || [];
     const needsValue = !['is_empty', 'is_not_empty'].includes(rule.operator);
+
+    // Fetch all module fields dynamically from API
+    useEffect(() => {
+        if (!moduleKey) return;
+        setLoadingFields(true);
+        fetch(`/api/module-fields?module=${moduleKey}`)
+            .then(r => r.json())
+            .then(d => setModuleFields(d.fields || []))
+            .catch(() => setModuleFields([]))
+            .finally(() => setLoadingFields(false));
+    }, [moduleKey]);
 
     useEffect(() => {
         if (!rule.field) { setFieldValues([]); return; }
@@ -96,13 +110,17 @@ function ConditionRow({ rule, moduleKey, onChange, onRemove, canRemove }: Condit
         <div className="flex items-center gap-2 flex-wrap">
             {/* Field */}
             <Select value={rule.field} onValueChange={v => onChange({ ...rule, field: v, value: '' })}>
-                <SelectTrigger className="w-44 bg-white text-sm h-9">
-                    <SelectValue placeholder="Select field..." />
+                <SelectTrigger className="w-48 bg-white text-sm h-9">
+                    {loadingFields
+                        ? <span className="text-muted-foreground text-xs flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Loading fields...</span>
+                        : <SelectValue placeholder="Select field..." />
+                    }
                 </SelectTrigger>
                 <SelectContent>
-                    {moduleFields.length > 0 ? moduleFields.map(f => (
-                        <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
-                    )) : <div className="p-2 text-xs text-muted-foreground">No fields for this module</div>}
+                    {moduleFields.length > 0
+                        ? moduleFields.map(f => <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>)
+                        : <div className="p-2 text-xs text-muted-foreground">No fields available</div>
+                    }
                 </SelectContent>
             </Select>
 
