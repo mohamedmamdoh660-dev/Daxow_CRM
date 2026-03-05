@@ -4,8 +4,29 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Webhook as WebhookIcon, Code2, Globe } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
-import { loadButtons, loadWebhooks, appendLog, type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType } from '@/lib/types/buttons-webhooks';
+import {
+    loadButtons, loadWebhooks, appendLog,
+    type CustomButton, type Webhook, type WebhookParam, type PositionType, type PageType, type ButtonCondition,
+} from '@/lib/types/buttons-webhooks';
 import { cn } from '@/lib/utils';
+
+/** Evaluate if a record satisfies a button condition */
+function evaluateCondition(condition: ButtonCondition | undefined, record: Record<string, any>): boolean {
+    if (!condition) return true;
+    const { field, operator, value = '' } = condition;
+    const recordVal = String(record[field] ?? '').toLowerCase().trim();
+    const condVal = value.toLowerCase().trim();
+    switch (operator) {
+        case 'is': return recordVal === condVal;
+        case 'is_not': return recordVal !== condVal;
+        case 'contains': return recordVal.includes(condVal);
+        case 'not_contains': return !recordVal.includes(condVal);
+        case 'is_empty': return recordVal === '';
+        case 'is_not_empty': return recordVal !== '';
+        default: return true;
+    }
+}
+
 
 interface ModuleActionButtonsProps {
     /** The permission module key, e.g. 'Students', 'Leads' */
@@ -39,16 +60,23 @@ export function ModuleActionButtons({
             if (!b.isActive) return false;
             if (b.page !== 'both' && b.page !== page) return false;
             if (b.position !== 'both' && b.position !== position) return false;
-            if (b.roles.includes('all')) return true;
-            if (!userRole) return false;
-            return b.roles.includes(userRole);
+            // Role check (case-insensitive)
+            if (!b.roles.includes('all')) {
+                if (!userRole) return false;
+                const lRole = userRole.toLowerCase();
+                if (!b.roles.some(r => r.toLowerCase() === lRole)) return false;
+            }
+            // Condition check against current record
+            if (!evaluateCondition(b.condition, record)) return false;
+            return true;
         });
         setButtons(moduleButtons);
         setWebhooks(loadWebhooks());
 
         console.log('[ModuleActionButtons] module:', module, 'position:', position, 'page:', page);
         console.log('[ModuleActionButtons] buttons found:', moduleButtons.length, moduleButtons.map((b: CustomButton) => b.name));
-    }, [module, userRole, position, page]);
+    }, [module, userRole, position, page, record]);
+
 
     if (buttons.length === 0) return null;
 

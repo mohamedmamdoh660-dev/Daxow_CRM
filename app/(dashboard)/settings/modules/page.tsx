@@ -18,11 +18,13 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
     loadButtons, saveButtons, loadWebhooks,
-    type CustomButton, type Webhook, type ActionType, type PageType, type PositionType
+    MODULE_FIELDS, CONDITION_OPERATORS,
+    type CustomButton, type Webhook, type ActionType, type PageType, type PositionType,
+    type ButtonCondition, type ConditionOperator,
 } from '@/lib/types/buttons-webhooks';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -36,7 +38,6 @@ const TABS = ['Layouts', 'Layout Rules', 'Validation Rules', 'Fields', 'Links', 
 
 const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
     webhook: <WebhookIcon className="h-4 w-4" />,
-
     function: <Code2 className="h-4 w-4" />,
     url: <Globe className="h-4 w-4" />,
 };
@@ -49,7 +50,6 @@ const ACTION_COLORS: Record<ActionType, string> = {
     url: 'bg-green-100 text-green-700 border-green-200',
 };
 
-// Roles — fetched from API or default fallback
 const DEFAULT_ROLES = ['admin', 'staff', 'agent'];
 
 // ── Coming Soon Tab ────────────────────────────────────────────────────────────
@@ -69,11 +69,12 @@ function ComingSoonTab({ tab }: { tab: string }) {
 interface ButtonFormProps {
     initial?: Partial<CustomButton>;
     moduleLabel: string;
+    moduleKey: string;
     onSave: (btn: Omit<CustomButton, 'id' | 'createdAt'>) => void;
     onCancel: () => void;
 }
 
-function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps) {
+function ButtonForm({ initial, moduleLabel, moduleKey, onSave, onCancel }: ButtonFormProps) {
     const [name, setName] = useState(initial?.name || '');
     const [description, setDescription] = useState(initial?.description || '');
     const [actionType, setActionType] = useState<ActionType>(initial?.actionType || 'webhook');
@@ -86,21 +87,37 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
     const [webhooks, setWebhooks] = useState<Webhook[]>([]);
     const [roles, setRoles] = useState<string[]>(DEFAULT_ROLES);
 
+    // Condition state
+    const [useCondition, setUseCondition] = useState(!!initial?.condition);
+    const [condField, setCondField] = useState(initial?.condition?.field || '');
+    const [condOperator, setCondOperator] = useState<ConditionOperator>(initial?.condition?.operator || 'is');
+    const [condValue, setCondValue] = useState(initial?.condition?.value || '');
+    const [fieldValues, setFieldValues] = useState<string[]>([]);
+    const [loadingValues, setLoadingValues] = useState(false);
+
+    const moduleFields = MODULE_FIELDS[moduleKey] || [];
+    const needsValue = !['is_empty', 'is_not_empty'].includes(condOperator);
+
     useEffect(() => {
         setWebhooks(loadWebhooks());
-        // Fetch roles from API
         fetch('/api/roles').then(r => r.json()).then(data => {
-            if (Array.isArray(data)) {
-                setRoles(data.map((r: any) => r.name));
-            }
+            if (Array.isArray(data)) setRoles(data.map((r: any) => r.name));
         }).catch(() => { });
     }, []);
 
+    // Fetch field values dynamically when condField changes
+    useEffect(() => {
+        if (!condField || !useCondition) { setFieldValues([]); return; }
+        setLoadingValues(true);
+        fetch(`/api/field-values?module=${moduleKey}&field=${condField}`)
+            .then(r => r.json())
+            .then(d => setFieldValues(d.values || []))
+            .catch(() => setFieldValues([]))
+            .finally(() => setLoadingValues(false));
+    }, [condField, moduleKey, useCondition]);
+
     const toggleRole = (role: string) => {
-        if (role === 'all') {
-            setSelectedRoles(['all']);
-            return;
-        }
+        if (role === 'all') { setSelectedRoles(['all']); return; }
         setSelectedRoles(prev => {
             const without = prev.filter(r => r !== 'all' && r !== role);
             if (prev.includes(role)) return without.length ? without : ['all'];
@@ -114,7 +131,12 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
         url: 'https://example.com/page (use {{record.id}} for record ID)',
     };
 
-    const isValid = name.trim() && actionValue.trim();
+    const isValid = !!(name.trim() && actionValue.trim());
+
+    const buildCondition = (): ButtonCondition | undefined => {
+        if (!useCondition || !condField || !condOperator) return undefined;
+        return { field: condField, operator: condOperator, value: needsValue ? condValue : undefined };
+    };
 
     return (
         <div className="bg-white rounded-xl border shadow-sm p-6 max-w-2xl">
@@ -180,9 +202,7 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
                                 </SelectTrigger>
                                 <SelectContent>
                                     {webhooks.length === 0 ? (
-                                        <div className="p-2 text-sm text-muted-foreground text-center">
-                                            No webhooks configured yet.
-                                        </div>
+                                        <div className="p-2 text-sm text-muted-foreground text-center">No webhooks configured yet.</div>
                                     ) : (
                                         webhooks.map(w => (
                                             <SelectItem key={w.id} value={w.id}>
@@ -233,11 +253,10 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
                     </div>
                 </div>
 
-                {/* Role Accessibility */}
+                {/* Role Visibility */}
                 <div className="space-y-2 p-4 bg-gray-50 rounded-lg border">
                     <Label>Button Visibility — Which roles can see this button</Label>
                     <div className="flex flex-wrap gap-3 mt-2">
-                        {/* All Roles option */}
                         <label className="flex items-center gap-2 cursor-pointer">
                             <Checkbox
                                 checked={selectedRoles.includes('all')}
@@ -245,7 +264,6 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
                             />
                             <span className="text-sm font-medium">All Roles</span>
                         </label>
-                        {/* Individual roles */}
                         {roles.map(role => (
                             <label key={role} className="flex items-center gap-2 cursor-pointer">
                                 <Checkbox
@@ -257,6 +275,98 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
                             </label>
                         ))}
                     </div>
+                </div>
+
+                {/* ── Condition Builder ─────────────────────────────────────────── */}
+                <div className="space-y-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Label className="text-amber-800">Show Condition</Label>
+                            <p className="text-xs text-amber-600 mt-0.5">Only show this button when a field matches a value</p>
+                        </div>
+                        <div className="flex">
+                            <button
+                                type="button"
+                                onClick={() => setUseCondition(false)}
+                                className={cn('px-3 py-1 rounded-l-md border text-sm font-medium transition-colors',
+                                    !useCondition ? 'bg-white border-amber-400 text-amber-700 shadow-sm z-10' : 'bg-amber-100 border-amber-200 text-amber-500'
+                                )}
+                            >Always</button>
+                            <button
+                                type="button"
+                                onClick={() => setUseCondition(true)}
+                                className={cn('px-3 py-1 rounded-r-md border text-sm font-medium transition-colors -ml-px',
+                                    useCondition ? 'bg-white border-amber-400 text-amber-700 shadow-sm z-10' : 'bg-amber-100 border-amber-200 text-amber-500'
+                                )}
+                            >Condition</button>
+                        </div>
+                    </div>
+
+                    {useCondition && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {/* Field picker */}
+                            <Select value={condField} onValueChange={v => { setCondField(v); setCondValue(''); }}>
+                                <SelectTrigger className="w-44 bg-white">
+                                    <SelectValue placeholder="Select field..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {moduleFields.length > 0 ? moduleFields.map(f => (
+                                        <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
+                                    )) : (
+                                        <div className="p-2 text-xs text-muted-foreground">No fields mapped for this module</div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Operator */}
+                            <Select value={condOperator} onValueChange={v => setCondOperator(v as ConditionOperator)}>
+                                <SelectTrigger className="w-36 bg-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CONDITION_OPERATORS.map(op => (
+                                        <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Value — dynamic dropdown or free text */}
+                            {needsValue && condField && (
+                                loadingValues ? (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground px-2">
+                                        <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+                                    </div>
+                                ) : fieldValues.length > 0 ? (
+                                    <Select value={condValue} onValueChange={setCondValue}>
+                                        <SelectTrigger className="w-44 bg-white">
+                                            <SelectValue placeholder="Select value..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {fieldValues.map(v => (
+                                                <SelectItem key={v} value={v}>{v}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        placeholder="Enter value..."
+                                        value={condValue}
+                                        onChange={e => setCondValue(e.target.value)}
+                                        className="w-44 bg-white text-sm"
+                                    />
+                                )
+                            )}
+
+                            {/* Preview label */}
+                            {condField && condOperator && (needsValue ? condValue : true) && (
+                                <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">
+                                    Show when <strong>{moduleFields.find(f => f.key === condField)?.label || condField}</strong>{' '}
+                                    {CONDITION_OPERATORS.find(o => o.value === condOperator)?.label}
+                                    {needsValue && <> <strong>{condValue}</strong></>}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Active toggle */}
@@ -280,6 +390,7 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
                         actionValue: actionValue.trim(),
                         page, position, isActive,
                         roles: selectedRoles,
+                        condition: buildCondition(),
                     })}
                 >
                     <Save className="h-4 w-4 mr-2" /> Save Button
@@ -292,7 +403,6 @@ function ButtonForm({ initial, moduleLabel, onSave, onCancel }: ButtonFormProps)
 
 // ── Buttons Tab ────────────────────────────────────────────────────────────────
 function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel: string }) {
-    const { toast } = useToast();
     const [allButtons, setAllButtons] = useState<Record<string, CustomButton[]>>({});
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -301,17 +411,16 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
     useEffect(() => { setAllButtons(loadButtons()); }, [moduleKey]);
 
     const buttons = allButtons[moduleKey] || [];
-
     const persist = (updated: Record<string, CustomButton[]>) => { setAllButtons(updated); saveButtons(updated); };
 
     const handleSave = (data: Omit<CustomButton, 'id' | 'createdAt'>) => {
         if (editingId) {
             persist({ ...allButtons, [moduleKey]: buttons.map(b => b.id === editingId ? { ...b, ...data } : b) });
-            toast({ title: 'Button updated' });
+            sonnerToast.success('Button updated');
         } else {
             const newBtn: CustomButton = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
             persist({ ...allButtons, [moduleKey]: [...buttons, newBtn] });
-            toast({ title: 'Button created' });
+            sonnerToast.success('Button created');
         }
         setShowForm(false); setEditingId(null);
     };
@@ -319,7 +428,7 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
     const handleDelete = (id: string) => {
         persist({ ...allButtons, [moduleKey]: buttons.filter(b => b.id !== id) });
         setDeleteId(null);
-        toast({ title: 'Button deleted', variant: 'destructive' });
+        sonnerToast.error('Button deleted');
     };
 
     const handleToggle = (id: string) => {
@@ -331,6 +440,7 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
             <ButtonForm
                 initial={editingId ? buttons.find(b => b.id === editingId) : undefined}
                 moduleLabel={moduleLabel}
+                moduleKey={moduleKey}
                 onSave={handleSave}
                 onCancel={() => { setShowForm(false); setEditingId(null); }}
             />
@@ -372,7 +482,7 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
                                 <div>
                                     <p className="font-medium text-sm text-gray-800">{btn.name}</p>
                                     {btn.description && <p className="text-xs text-muted-foreground mt-0.5">{btn.description}</p>}
-                                    <div className="flex gap-1 mt-1">
+                                    <div className="flex gap-1 mt-1 flex-wrap">
                                         <Badge variant="outline" className="text-xs">
                                             {btn.page === 'in_record' ? 'In Record' : btn.page === 'list_view' ? 'List View' : 'Both Pages'}
                                         </Badge>
@@ -382,6 +492,11 @@ function ButtonsTab({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel
                                         <Badge variant="outline" className="text-xs">
                                             {btn.roles.includes('all') ? 'All Roles' : btn.roles.join(', ')}
                                         </Badge>
+                                        {btn.condition && (
+                                            <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+                                                When {btn.condition.field} {btn.condition.operator.replace('_', ' ')} {btn.condition.value || ''}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
                             </div>

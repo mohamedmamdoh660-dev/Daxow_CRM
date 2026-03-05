@@ -71,6 +71,24 @@ export interface Webhook {
     updatedAt: string;
 }
 
+// ── Button Condition ──────────────────────────────────────────────────────────
+export type ConditionOperator = 'is' | 'is_not' | 'contains' | 'not_contains' | 'is_empty' | 'is_not_empty';
+
+export interface ButtonCondition {
+    field: string;              // e.g. 'status', 'nationality'
+    operator: ConditionOperator;
+    value?: string;             // optional (not needed for is_empty/is_not_empty)
+}
+
+export const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
+    { value: 'is', label: 'is' },
+    { value: 'is_not', label: 'is not' },
+    { value: 'contains', label: 'contains' },
+    { value: 'not_contains', label: 'does not contain' },
+    { value: 'is_empty', label: 'is empty' },
+    { value: 'is_not_empty', label: 'is not empty' },
+];
+
 // ── Custom Button ─────────────────────────────────────────────────────────────
 export interface CustomButton {
     id: string;
@@ -82,6 +100,7 @@ export interface CustomButton {
     position: PositionType;
     isActive: boolean;
     roles: string[];        // ['all'] or specific role names
+    condition?: ButtonCondition; // optional show condition
     createdAt: string;
 }
 
