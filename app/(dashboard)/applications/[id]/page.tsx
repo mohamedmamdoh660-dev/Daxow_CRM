@@ -44,6 +44,7 @@ import { FileUpload } from '@/components/ui/file-upload';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { ModuleActionButtons } from '@/components/shared/module-action-buttons';
 
 // Stage configuration with colors and icons
 const STAGES = [
@@ -314,8 +315,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                     </div>
                 </div>
 
-                {/* Stage Changer - only for editors */}
-                <div className="flex items-center gap-3">
+                {/* Stage Changer + Custom Buttons in header */}
+                <div className="flex items-center gap-3 flex-wrap justify-end">
+                    <ModuleActionButtons
+                        module="Applications"
+                        position="header"
+                        page="in_record"
+                        record={application}
+                    />
                     <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Change Stage</label>
                         <Select
@@ -407,6 +414,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                     )}
                 </CardContent>
             </Card>
+
+            {/* Custom Buttons — details position */}
+            <ModuleActionButtons
+                module="Applications"
+                position="details"
+                page="in_record"
+                record={application}
+            />
 
             {/* ==================== QUICK STATS ==================== */}
             <div className="grid gap-4 md:grid-cols-4">
