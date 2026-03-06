@@ -175,19 +175,26 @@ export function ModuleActionButtons({
             const finalUrl = queryParams.toString() ? `${webhook.url}?${queryParams}` : webhook.url;
             console.log('[ModuleActionButtons] Final URL:', finalUrl, 'method:', webhook.method);
 
-            // Build body
-            let bodyPayload: any = { record, module };
+            // Build body — sanitize record first to strip Prisma Decimal/BigInt/undefined
+            const safeRecord = JSON.parse(JSON.stringify(record, (_, v) => {
+                if (typeof v === 'bigint') return v.toString();
+                if (v !== null && typeof v === 'object' && typeof v.toFixed === 'function') return parseFloat(v.toFixed(4)); // Prisma Decimal
+                return v;
+            }));
+
+            let bodyPayload: any = { record: safeRecord, module };
             if (webhook.bodyType === 'json' && webhook.bodyContent) {
                 try { bodyPayload = JSON.parse(interpolate(webhook.bodyContent)); }
                 catch { bodyPayload = interpolate(webhook.bodyContent); }
             } else if (webhook.bodyType === 'form_data') {
                 const fd: Record<string, string> = {};
                 (webhook.moduleParams || []).forEach((p: WebhookParam) => {
-                    fd[p.name] = p.field ? String(record[p.field] ?? '') : '';
+                    fd[p.name] = p.field ? String(safeRecord[p.field] ?? '') : '';
                 });
                 (webhook.customParams || []).forEach((p: WebhookParam) => { fd[p.name] = p.value ?? ''; });
                 bodyPayload = fd;
             }
+
 
             // 🔑 Use server-side proxy to avoid CORS
             const toastId = sonnerToast.loading(`${btn.name}`, { description: 'Sending request...' });

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import {
     Plus, Trash2, Edit2, X, Save, BarChart2, ExternalLink,
     Webhook as WebhookIcon, Search, CheckCircle2, XCircle, Clock, ChevronRight
@@ -18,11 +19,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
-    loadWebhooks, saveWebhooks, MODULE_FIELDS,
+    loadWebhooks, saveWebhooks,
     loadLogs, clearLogsForWebhook,
     type Webhook, type WebhookParam, type WebhookLog, type HttpMethod, type BodyType
 } from '@/lib/types/buttons-webhooks';
 import { PERMISSION_MODULES } from '@/lib/config/modules';
+
+type ModuleField = { key: string; label: string; fieldType: string };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const HTTP_METHODS: HttpMethod[] = ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'];
@@ -52,7 +55,16 @@ function ParamRow({
     type: 'module' | 'custom';
     selectedModule: string;
 }) {
-    const fields = MODULE_FIELDS[selectedModule] || [];
+    const [fields, setFields] = useState<ModuleField[]>([]);
+
+    useEffect(() => {
+        const mod = param.module || selectedModule;
+        if (!mod) return;
+        fetch(`/api/module-fields?module=${mod}`)
+            .then(r => r.json())
+            .then(d => setFields(d.fields || []))
+            .catch(() => setFields([]));
+    }, [param.module, selectedModule]);
 
     return (
         <div className="flex items-center gap-2 mb-2">
@@ -75,7 +87,7 @@ function ParamRow({
                             <SelectValue placeholder="Select field" />
                         </SelectTrigger>
                         <SelectContent>
-                            {(MODULE_FIELDS[param.module || selectedModule] || []).map(f => (
+                            {fields.map((f: ModuleField) => (
                                 <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
                             ))}
                         </SelectContent>
@@ -95,6 +107,134 @@ function ParamRow({
         </div>
     );
 }
+
+// ── Smart Body Editor ─────────────────────────────────────────────────────────
+function SmartBodyEditor({
+    value, onChange, module: selectedModule, placeholder, rows = 8
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    module: string;
+    placeholder?: string;
+    rows?: number;
+}) {
+    const [fields, setFields] = useState<ModuleField[]>([]);
+    const [showPicker, setShowPicker] = useState(false);
+    const [search, setSearch] = useState('');
+    const [cursorPos, setCursorPos] = useState(0);
+    const [pickerTop, setPickerTop] = useState(0);
+    const [pickerLeft, setPickerLeft] = useState(0);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        if (!selectedModule) return;
+        fetch(`/api/module-fields?module=${selectedModule}`)
+            .then(r => r.json())
+            .then(d => setFields(d.fields || []))
+            .catch(() => setFields([]));
+    }, [selectedModule]);
+
+    const filteredFields = fields.filter(f =>
+        f.label.toLowerCase().includes(search.toLowerCase()) ||
+        f.key.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const insertField = (field: ModuleField) => {
+        const ta = textareaRef.current;
+        if (!ta) return;
+        const before = value.slice(0, cursorPos);
+        const after = value.slice(cursorPos);
+        const lastBrace = before.lastIndexOf('{{');
+        const token = `{{record.${field.key}}}`;
+        const newVal = before.slice(0, lastBrace) + token + after;
+        onChange(newVal);
+        setShowPicker(false);
+        setSearch('');
+        setTimeout(() => {
+            ta.focus();
+            const pos = lastBrace + token.length;
+            ta.setSelectionRange(pos, pos);
+        }, 0);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const v = e.target.value;
+        const pos = e.target.selectionStart || 0;
+        onChange(v);
+        setCursorPos(pos);
+        const before = v.slice(0, pos);
+        const braceIdx = before.lastIndexOf('{{');
+        if (braceIdx !== -1 && !before.slice(braceIdx + 2).includes('}}')) {
+            setSearch(before.slice(braceIdx + 2));
+            setShowPicker(true);
+            const ta = textareaRef.current;
+            if (ta) {
+                const rect = ta.getBoundingClientRect();
+                setPickerTop(rect.bottom + window.scrollY + 4);
+                setPickerLeft(rect.left);
+            }
+        } else {
+            setShowPicker(false);
+        }
+    };
+
+    return (
+        <div className="relative">
+            <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={handleChange}
+                onKeyDown={e => { if (e.key === 'Escape') { setShowPicker(false); setSearch(''); } }}
+                onBlur={() => setTimeout(() => setShowPicker(false), 150)}
+                rows={rows}
+                placeholder={placeholder}
+                className="w-full font-mono text-sm rounded-md border border-input bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+                Tip: type <code className="bg-gray-100 px-1 rounded">{'{{'}</code> to browse and insert field variables
+            </p>
+            {showPicker && (
+                <div
+                    className="fixed z-50 bg-white border rounded-xl shadow-xl w-72 overflow-hidden"
+                    style={{ top: pickerTop, left: pickerLeft }}
+                >
+                    <div className="px-3 py-2 border-b bg-gray-50">
+                        <p className="text-xs font-semibold text-gray-600 mb-1">
+                            Insert field — <span className="text-primary">{selectedModule}</span>
+                        </p>
+                        <input
+                            autoFocus
+                            placeholder="Search fields..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="w-full text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                            onMouseDown={e => e.preventDefault()}
+                        />
+                    </div>
+                    <div className="max-h-52 overflow-y-auto py-1">
+                        {filteredFields.length === 0
+                            ? <p className="text-xs text-muted-foreground px-3 py-2">No fields found</p>
+                            : filteredFields.map(f => (
+                                <button
+                                    key={f.key}
+                                    type="button"
+                                    onMouseDown={e => { e.preventDefault(); insertField(f); }}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-primary/5 transition-colors"
+                                >
+                                    <span className="text-sm font-medium text-gray-800">{f.label}</span>
+                                    <code className="text-[10px] text-muted-foreground bg-gray-100 px-1.5 py-0.5 rounded font-mono">
+                                        {`{{record.${f.key}}}`}
+                                    </code>
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 
 // ── Webhook Form ──────────────────────────────────────────────────────────────
 function WebhookForm({ initial, onSave, onCancel }: {
@@ -238,16 +378,15 @@ function WebhookForm({ initial, onSave, onCancel }: {
                         </Select>
                     </div>
                     {(bodyType === 'json' || bodyType === 'raw') && (
-                        <Textarea
-                            placeholder={bodyType === 'json'
-                                ? '{\n  "student_id": "{{record.id}}",\n  "email": "{{record.email}}"\n}'
-                                : 'Raw body content (use {{record.field}} for dynamic values)'}
+                        <SmartBodyEditor
                             value={bodyContent}
-                            onChange={e => setBodyContent(e.target.value)}
-                            rows={5}
-                            className="font-mono text-sm"
+                            onChange={setBodyContent}
+                            module={module}
+                            placeholder='{ "field": "{{record.id}}" }'
+                            rows={8}
                         />
                     )}
+
                 </div>
 
                 {/* Preview URL */}
