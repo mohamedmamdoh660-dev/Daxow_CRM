@@ -233,14 +233,14 @@ model Student {
   documents          Json            @default("[]")
   agentId            String?
   assignedTo         String?
-  ownerId            String?   // ID of owning User (Direct) or Agent (Agent)
-  ownerType          String?   // 'Direct' | 'Agent'
   status             String          @default("Applicant")
   tags               String[]        @default([])
   metadata           Json            @default("{}")
   isActive           Boolean         @default(true)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+  ownerId            String?
+  ownerType          String?
   applications       Application[]
   studentDocuments   Document[]      @relation("StudentToDocument")
   agent              Agent?          @relation(fields: [agentId], references: [id])
@@ -265,14 +265,14 @@ model Application {
   degreeId        String
   agentId         String?
   agencyId        String?
-  ownerId         String?   // ID of owning User (Direct) or Agent (Agent)
-  ownerType       String?   // 'Direct' | 'Agent'
   stage           String          @default("Draft")
   status          String          @default("New")
   notes           String?
   metadata        Json            @default("{}")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  ownerId         String?
+  ownerType       String?
   academicYear    AcademicYear    @relation(fields: [academicYearId], references: [id])
   agency          Agent?          @relation("AgencyApplications", fields: [agencyId], references: [id])
   agent           User?           @relation("AgentApplications", fields: [agentId], references: [id])
@@ -430,33 +430,28 @@ model User {
   agentApplications Application[] @relation("AgentApplications")
   programs          Program[]
   agency            Agent?        @relation(fields: [agencyId], references: [id])
-  groups            UserGroup[]   // Many-to-many: user can belong to multiple groups
+  groups            UserGroup[]
 
   @@index([email])
 }
 
-
 model Role {
-  id          String      @id @default(cuid())
-  name        String      @unique
+  id          String       @id @default(cuid())
+  name        String       @unique
   description String?
-  isSystem    Boolean     @default(false)
-
-  userGroups  UserGroup[]
+  isSystem    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   permissions Permission[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userGroups  UserGroup[]
 }
 
-// Junction table: User belongs to many Groups, Group has many Users
 model UserGroup {
   userId     String
   roleId     String
   assignedAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@index([userId])
@@ -466,15 +461,13 @@ model UserGroup {
 model Permission {
   id     String @id @default(cuid())
   roleId String
-  module String // e.g., "Students", "Applications"
-  action String // "view" | "add" | "edit" | "delete" | "export" | "import"
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module String
+  action String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, module, action])
   @@index([roleId])
 }
-
 
 model Setting {
   id        String   @id @default(cuid())
@@ -508,14 +501,14 @@ model Lead {
   proposedCommission   Decimal?        @db.Decimal(5, 2)
   notes                String?
   assignedTo           String?
-  ownerId              String?   // ID of owning User (Direct) or Agent (Agent)
-  ownerType            String?   // 'Direct' | 'Agent'
   convertedToStudentId String?
   convertedToAgentId   String?
   metadata             Json            @default("{}")
   isActive             Boolean         @default(true)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
+  ownerId              String?
+  ownerType            String?
   leadDocuments        Document[]      @relation("LeadToDocument")
   timeline             TimelineEvent[]
 
