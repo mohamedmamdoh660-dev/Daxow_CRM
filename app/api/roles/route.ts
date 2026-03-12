@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { BACKEND_URL } from '@/lib/backend-client';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('access_token')?.value;
-
-        const response = await fetch(`${BACKEND_URL}/api/roles`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const roles = await prisma.role.findMany({
+            include: {
+                permissions: true,
+            },
+            orderBy: { name: 'asc' },
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch roles');
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json(roles);
     } catch (error) {
         console.error('Error fetching roles:', error);
         return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
@@ -27,26 +18,28 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('access_token')?.value;
         const body = await request.json();
+        const { name, description, permissions } = body;
 
-        const response = await fetch(`${BACKEND_URL}/api/roles`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
+        const role = await prisma.role.create({
+            data: {
+                name,
+                description,
+                permissions: permissions?.length
+                    ? {
+                        createMany: {
+                            data: permissions.map((p: any) => ({
+                                module: p.module,
+                                action: p.action,
+                            })),
+                        },
+                    }
+                    : undefined,
             },
-            body: JSON.stringify(body),
+            include: { permissions: true },
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            return NextResponse.json(error, { status: response.status });
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data, { status: 201 });
+        return NextResponse.json(role, { status: 201 });
     } catch (error) {
         console.error('Error creating role:', error);
         return NextResponse.json({ error: 'Failed to create role' }, { status: 500 });
